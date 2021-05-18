@@ -339,12 +339,16 @@ function CheckHitChancePvP(e)
 	end
 
 	chancetohit = chancetohit + (atk /16);
-	--If a player is sitting in PvP they will be hit 100% of the time.
-	if (other:CastToClient():IsSitting()) then
-		chancetohit = 100;
-	end
 
 	local tohit_roll = Random.Real(0, 100);
+
+	if (self:FindBuff(4505) or self:FindBuff(4501) or self:FindBuff(4672)) then
+		chancetohit = chancetohit + 20;
+	end
+
+	if (other:FindBuff(4503) or other:FindBuff(4670) or other:FindBuff(4515) or other:FindBuff(4515)) then
+		chancetohit = chancetohit - 25;
+	end
 
 	eq.log_combat(
 			string.format("[%s] [CheckHitChancePvP] Chance [%i] ToHitRoll [%i] Hit? [%s]",
@@ -360,6 +364,19 @@ function CheckHitChancePvP(e)
 		chancetohit = 95;
 		elseif (chancetohit < 5) then
 			chancetohit = 5;
+	end
+
+	if (other:FindBuff(4502)) then
+		chancetohit = chancetohit - 1000;
+	end
+
+	--If a player is sitting in PvP they will be hit 100% of the time.
+	if (other:CastToClient():IsSitting()) then
+		chancetohit = 100;
+	end
+
+	if (other:CastToClient():IsSitting() and chancetohit < 1) then
+		chancetohit = 100;
 	end
 
 	if (tohit_roll <= chancetohit) then
@@ -776,6 +793,359 @@ function CommonOutgoingHitSuccess(e)
 				return e;
 			end
 		end
+
+		self = e.self:CastToClient();
+		other = e.other:CastToNPC();
+
+		self_weapon = self:GetInventory():GetItem(Slot.Primary);
+		off_hand = self:GetInventory():GetItem(Slot.Secondary);
+		self_bow = self:GetInventory():GetItem(Slot.Range);
+		self_ammo = self:GetInventory():GetItem(Slot.Ammo);
+		boots = self:GetInventory():GetItem(Slot.Feet);
+		bootsac = boots:GetItem():AC();
+		rangedweapondamage = self_bow:GetItem():Damage()
+		ammoweapondamage = self_ammo:GetItem():Damage()
+		weapondamage = self_weapon:GetItem():Damage()
+		offweapondamage = off_hand:GetItem():Damage()
+		weaponatk = (self_weapon:GetItem():Attack() /10 )
+		strbonus = (self:GetSTR() /12);
+		dexbonus = (self:GetDEX() /12);
+		playeratkbonus = (self:GetATK() /10);
+		defenderac = e.other:GetAC();
+		mitigationac = (defenderac / 15);
+		eq.debug("AC " .. defenderac);
+		eq.debug("Mitigated DMG " .. mitigationac);
+
+		--delay and bonus
+		wepdelay = self_weapon:GetItem():Delay()
+		if (self:GetClass() == Class.WARRIOR or self:GetClass() == Class.ROGUE or self:GetClass() == Class.RANGER or self:GetClass() == Class.MONK or self:GetClass() == Class.SHADOWKNIGHT or self:GetClass() == Class.PALADIN or self:GetClass() == Class.BARD) then
+			BasicBonus = ((self:GetLevel() - 25) / 3);
+		else
+			BasicBonus = 0;
+		end
+		itemtype = self_weapon:GetItem():ItemType()
+		itemtypeoffhand = off_hand:GetItem():ItemType()
+		eq.debug("itemtype " .. itemtype);
+	
+		eq.debug("playeratkdmg " .. playeratkbonus .. " weaponatkdmg " .. weaponatk);
+	
+		--Str Bonus Cap
+		if (self:GetLevel() < 11) then
+			strbonus = (self:GetSTR() /40)
+		elseif (self:GetLevel() > 11 and self:GetLevel() <= 21) then
+			strbonus = (self:GetSTR() /25)
+		elseif (self:GetLevel() > 21 and self:GetLevel() <= 60) then
+			strbonus = (self:GetSTR() /14)
+		end
+	
+		--Dex Bonus Cap
+		if (self:GetLevel() < 11) then
+			dexbonus = (self:GetDEX() /40)
+		elseif (self:GetLevel() > 11 and self:GetLevel() <= 21) then
+			dexbonus = (self:GetDEX() /25)
+		elseif (self:GetLevel() > 21 and self:GetLevel() <= 60) then
+			dexbonus = (self:GetDEX() /14)
+		end
+	
+		--Weapondamage Caps
+		if (self:GetLevel() < 11) then
+			if (weapondamage > 10) then
+				weapondamage = 10;
+			end
+		elseif (self:GetLevel() < 19) then
+			if (weapondamage > 14) then
+				weapondamage = 14;
+			end
+		elseif (self:GetLevel() < 29) then
+			if (weapondamage > 30) then
+				weapondamage = 30;
+			end
+		end
+	
+	
+		--Backstab Damage
+		if e.hit.skill == 8 then
+			if self:GetSTR() > 200 then
+				bstabstr = (((self:GetSTR() - 200) / 5) + 200);
+			else
+				bstabstr = self:GetSTR();
+			end
+			defenderac = defenderac / 2;
+			attackmod = self:GetATK() / 5;
+			backstabmod = 2 + (self:GetSkill(Skill.Backstab) * 0.02 );
+			backstabmin = (((weapondamage * backstabmod) * bstabstr) / 100) + attackmod;
+			backstabmax = (((self:GetSkill(Skill.Offense) + bstabstr) * (weapondamage * backstabmod)) / 70) + attackmod - defenderac; 
+			backstabdamage = Random.Real(backstabmin, backstabmax);
+			e.hit.damage_done = backstabdamage;
+
+			if (self:FindBuff(4676)) then
+				e.hit.damage_done = e.hit.damage_done * 2;
+			end
+		end
+	
+		--throwing damage
+		if e.hit.skill == 51 then
+			bowmindmg = rangedweapondamage + BasicBonus;
+			bowmaxdmg = bowmindmg + dexbonus + playeratkbonus;
+			bowdmg = Random.Real(bowmindmg, bowmaxdmg);
+			eq.debug("bow dmg " .. bowmindmg);
+			e.hit.damage_done = bowdmg - mitigationac;
+
+			if (self:FindBuff(4676)) then
+				e.hit.damage_done = e.hit.damage_done * 2;
+			end
+			if (self:FindBuff(4675)) then
+				e.hit.damage_done = e.hit.damage_done * 2;
+			end
+			if (self:FindBuff(4512)) then
+				e.hit.damage_done = e.hit.damage_done * 2;
+			end
+			if (self:FindBuff(4498)) then
+				e.hit.damage_done = e.hit.damage_done * 1.35;
+			end
+
+		end
+	
+		--bow damage
+		if e.hit.skill == 7 then
+			bowmindmg = rangedweapondamage + BasicBonus + ammoweapondamage;
+			bowmaxdmg = bowmindmg + dexbonus + playeratkbonus;
+			bowdmg = Random.Real(bowmindmg, bowmaxdmg);
+			eq.debug("bow dmg " .. bowmindmg);
+			if (self:GetLevel() < 11) then
+				if (bowdmg > 20) then
+					bowdmg = 20;
+				end
+			end
+			e.hit.damage_done = bowdmg - mitigationac;
+
+			--damage discs
+			if (self:FindBuff(4676)) then
+				e.hit.damage_done = e.hit.damage_done * 2;
+			end
+			if (self:FindBuff(4675)) then
+				e.hit.damage_done = e.hit.damage_done * 2;
+			end
+			if (self:FindBuff(4512)) then
+				e.hit.damage_done = e.hit.damage_done * 2;
+			end
+			if (self:FindBuff(4498)) then
+				e.hit.damage_done = e.hit.damage_done * 1.35;
+			end
+			if (self:FindBuff(4506)) then
+				e.hit.damage_done = e.hit.damage_done * 2.05;
+			end
+			
+		end
+	
+		--flying kick damage
+		if e.hit.skill == 26 then
+			flyingmindmg = 50 + bootsac;
+			flyingmaxdmg = flyingmindmg + (self:GetSkill(Skill.FlyingKick) / 2);
+			flyingdmg = Random.Real(flyingmindmg, flyingmaxdmg);
+			e.hit.damage_done = flyingdmg - mitigationac;
+
+			--damage discs
+			if (self:FindBuff(4676)) then
+				e.hit.damage_done = e.hit.damage_done * 2;
+			end
+			if (self:FindBuff(4675)) then
+				e.hit.damage_done = e.hit.damage_done * 2;
+			end
+			if (self:FindBuff(4512)) then
+				e.hit.damage_done = e.hit.damage_done * 2;
+			end
+			if (self:FindBuff(4498)) then
+				e.hit.damage_done = e.hit.damage_done * 1.35;
+			end
+			
+		end
+			
+		--kick and bash damage
+		if e.hit.skill == 30 or e.hit.skill == 10 then
+			if (self:CastToClient():GetSkill(Skill.Bash) <= 1 and e.hit.skill == 10) then
+			bashdmg = 1;
+			eq.debug("kick " .. bashdmg);
+			finaldmg = bashdmg - mitigationac;
+			if finaldmg < 1 then
+				finaldmg = 1;
+			end
+			e.hit.damage_done = finaldmg;
+			e.IgnoreDefault = true;
+			elseif (self:GetLevel() < 11) then
+				bashdmg = Random.Real(1, 7);
+				eq.debug("kick " .. bashdmg);
+				e.hit.damage_done = bashdmg - mitigationac;
+
+				--damage discs
+				if (self:FindBuff(4676)) then
+					e.hit.damage_done = e.hit.damage_done * 2;
+				end
+				if (self:FindBuff(4675)) then
+					e.hit.damage_done = e.hit.damage_done * 2;
+				end
+				if (self:FindBuff(4512)) then
+					e.hit.damage_done = e.hit.damage_done * 2;
+				end
+				if (self:FindBuff(4498)) then
+					e.hit.damage_done = e.hit.damage_done * 1.35;
+				end
+				
+			elseif (self:GetLevel() < 21) then
+				bashdmg = Random.Real(7, 15);
+				eq.debug("kick " .. bashdmg);
+				e.hit.damage_done = bashdmg - mitigationac;
+
+				--damage discs
+				if (self:FindBuff(4676)) then
+					e.hit.damage_done = e.hit.damage_done * 2;
+				end
+				if (self:FindBuff(4675)) then
+					e.hit.damage_done = e.hit.damage_done * 2;
+				end
+				if (self:FindBuff(4512)) then
+					e.hit.damage_done = e.hit.damage_done * 2;
+				end
+				if (self:FindBuff(4498)) then
+					e.hit.damage_done = e.hit.damage_done * 1.35;
+				end
+				
+			elseif (self:GetLevel() > 21) then
+				bashdmg = Random.Real(7, 27);
+				eq.debug("kick " .. bashdmg);
+				e.hit.damage_done = bashdmg - mitigationac;
+
+				--damage discs
+				if (self:FindBuff(4676)) then
+					e.hit.damage_done = e.hit.damage_done * 2;
+				end
+				if (self:FindBuff(4675)) then
+					e.hit.damage_done = e.hit.damage_done * 2;
+				end
+				if (self:FindBuff(4512)) then
+					e.hit.damage_done = e.hit.damage_done * 2;
+				end
+				if (self:FindBuff(4498)) then
+					e.hit.damage_done = e.hit.damage_done * 1.35;
+				end
+				
+			end
+		end
+	
+	
+		--Solves issue where BasicBonus is negative at lower levels lowering minimum damage.
+		if BasicBonus < 0 then
+			BasicBonus = 0;
+		end
+	
+		--2h bonus calcs
+		if (wepdelay <= 27) then
+			dmg_bonus = BasicBonus + 1;
+		elseif (wepdelay <= 59) then
+			dmg_bonus = (BasicBonus * 2) + 1;
+		elseif (wepdelay >= 70) then
+			dmg_bonus = (BasicBonus * 3) + 1;
+		end
+	
+		--Monk hand to hand damage
+		if e.hit.skill == 28 and self:GetClass() == Class.MONK then
+			if self:GetLevel() <= 4 then
+				weapondamage = 4;
+			elseif self:GetLevel() > 4 and self:GetLevel() <= 9 then
+				weapondamage = 5;
+			elseif self:GetLevel() > 9 and self:GetLevel() <= 14 then
+				weapondamage = 6;
+			elseif self:GetLevel() > 14 and self:GetLevel() <= 19 then
+				weapondamage = 7;
+			elseif self:GetLevel() > 19 and self:GetLevel() <= 24 then
+				weapondamage = 8;
+			elseif self:GetLevel() > 24 and self:GetLevel() <= 29 then
+				weapondamage = 9;
+			elseif self:GetLevel() > 29 and self:GetLevel() <= 34 then
+				weapondamage = 10;
+			elseif self:GetLevel() > 34 and self:GetLevel() <= 39 then
+				weapondamage = 11;
+			elseif self:GetLevel() > 39 and self:GetLevel() <= 44 then
+				weapondamage = 12;
+			elseif self:GetLevel() > 45 and self:GetLevel() <= 49 then
+				weapondamage = 13;
+			elseif self:GetLevel() > 49 and self:GetLevel() <= 60 then
+				weapondamage = 14;
+			end
+		end
+
+		if e.hit.skill == 0 or e.hit.skill == 1 or e.hit.skill == 28 or (e.hit.skill == 36 and itemtype ~= 35) then
+			eq.debug("1h");
+			minimumdamage = weapondamage + BasicBonus;
+			maximumdamage = minimumdamage + strbonus + playeratkbonus;
+
+			local damage_roll = Random.Real(minimumdamage, maximumdamage);
+			if (self:GetLevel() < 11) then
+				if (damage_roll > 20) then
+					damage_roll = 20;
+				end
+			end
+			mitigationac = mitigationac / 2;
+			e.hit.damage_done = damage_roll - mitigationac;
+			
+			--damage discs
+			if (self:FindBuff(4676)) then
+				e.hit.damage_done = e.hit.damage_done * 2;
+			end
+			if (self:FindBuff(4675)) then
+				e.hit.damage_done = e.hit.damage_done * 2;
+			end
+			if (self:FindBuff(4512)) then
+				e.hit.damage_done = e.hit.damage_done * 2;
+			end
+			if (self:FindBuff(4498)) then
+				e.hit.damage_done = e.hit.damage_done * 1.35;
+			end
+			
+			eq.debug("mindmg " .. minimumdamage .. " maximumdmg " .. maximumdamage);
+		end
+
+
+		if e.hit.skill == 2 or e.hit.skill == 3 or (e.hit.skill == 36 and itemtype == 35) then
+			eq.debug("2h");
+			minimumdamage = (weapondamage) + dmg_bonus;
+			maximumdamage = ((minimumdamage) * 2) + playeratkbonus + strbonus;
+
+			if (self:GetLevel() > 30) then
+				minimumdamage = minimumdamage * 1.3;
+				maximumdamage = (maximumdamage * 1.3) + strbonus;
+			end
+
+
+			damage_roll = Random.Real(minimumdamage, maximumdamage);
+			if (self:GetLevel() < 11) then
+				if (damage_roll > 20) then
+					damage_roll = 20;
+				end
+			end
+			e.hit.damage_done = damage_roll - mitigationac;
+			
+	
+		
+			--damage discs
+			if (self:FindBuff(4676)) then
+				e.hit.damage_done = e.hit.damage_done * 2;
+			end
+			if (self:FindBuff(4675)) then
+				e.hit.damage_done = e.hit.damage_done * 2;
+			end
+			if (self:FindBuff(4512)) then
+				e.hit.damage_done = e.hit.damage_done * 2;
+			end
+			if (self:FindBuff(4498)) then
+				e.hit.damage_done = e.hit.damage_done * 1.35;
+			end
+
+			eq.debug("mindmg " .. minimumdamage .. " maximumdmg " .. maximumdamage);
+		end
+	e = TryCriticalHit(e);
+	e.IgnoreDefault = true;
+	return e;
 	end
 
 	--Client to Client Melee Damage
@@ -878,12 +1248,26 @@ function CommonOutgoingHitSuccess(e)
 			backstabmax = (((self:GetSkill(Skill.Offense) + bstabstr) * (weapondamage * backstabmod)) / 70) + attackmod - defenderac; 
 			backstabdamage = Random.Real(backstabmin, backstabmax);
 			e.hit.damage_done = backstabdamage;
+
 			if (other:CastToClient():IsSitting()) then
 				e.hit.damage_done = backstabmax;
 			end
-			e = TryCriticalHit(e);
-			e.IgnoreDefault = true;
-			return e;
+
+			if (self:FindBuff(4676)) then
+				e.hit.damage_done = e.hit.damage_done * 2;
+			end
+
+			if (other:FindBuff(4510)) then
+				e.hit.damage_done = e.hit.damage_done * .40;
+			end
+
+			if (other:FindBuff(4499)) then
+				e.hit.damage_done = e.hit.damage_done * .65;
+			end
+
+			if (other:FindBuff(4498)) then
+				e.hit.damage_done = e.hit.damage_done * 1.35;
+			end
 		end
 	
 		--throwing damage
@@ -893,12 +1277,36 @@ function CommonOutgoingHitSuccess(e)
 			bowdmg = Random.Real(bowmindmg, bowmaxdmg);
 			eq.debug("bow dmg " .. bowmindmg);
 			e.hit.damage_done = bowdmg - mitigationac;
-			e.IgnoreDefault = true;
+
 			if (other:CastToClient():IsSitting()) then
 				e.hit.damage_done = bowmaxdmg;
 			end
-			e = TryCriticalHit(e);
-			return e;
+
+			if (self:FindBuff(4676)) then
+				e.hit.damage_done = e.hit.damage_done * 2;
+			end
+			if (self:FindBuff(4675)) then
+				e.hit.damage_done = e.hit.damage_done * 2;
+			end
+			if (self:FindBuff(4512)) then
+				e.hit.damage_done = e.hit.damage_done * 2;
+			end
+			if (self:FindBuff(4498)) then
+				e.hit.damage_done = e.hit.damage_done * 1.35;
+			end
+
+
+			if (other:FindBuff(4510)) then
+				e.hit.damage_done = e.hit.damage_done * .40;
+			end
+
+			if (other:FindBuff(4499)) then
+				e.hit.damage_done = e.hit.damage_done * .65;
+			end
+
+			if (other:FindBuff(4498)) then
+				e.hit.damage_done = e.hit.damage_done * 1.35;
+			end
 		end
 	
 		--bow damage
@@ -913,12 +1321,37 @@ function CommonOutgoingHitSuccess(e)
 				end
 			end
 			e.hit.damage_done = bowdmg - mitigationac;
-			e.IgnoreDefault = true;
 			if (other:CastToClient():IsSitting()) then
 				e.hit.damage_done = bowmaxdmg;
 			end
-			e = TryCriticalHit(e);
-			return e;
+
+			--damage discs
+			if (self:FindBuff(4676)) then
+				e.hit.damage_done = e.hit.damage_done * 2;
+			end
+			if (self:FindBuff(4675)) then
+				e.hit.damage_done = e.hit.damage_done * 2;
+			end
+			if (self:FindBuff(4512)) then
+				e.hit.damage_done = e.hit.damage_done * 2;
+			end
+			if (self:FindBuff(4498)) then
+				e.hit.damage_done = e.hit.damage_done * 1.35;
+			end
+			if (self:FindBuff(4506)) then
+				e.hit.damage_done = e.hit.damage_done * 2.05;
+			end
+			
+			--mitigation discs
+			if (other:FindBuff(4510)) then
+				e.hit.damage_done = e.hit.damage_done * .40;
+			end
+			if (other:FindBuff(4499)) then
+				e.hit.damage_done = e.hit.damage_done * .65;
+			end
+			if (other:FindBuff(4498)) then
+				e.hit.damage_done = e.hit.damage_done * 1.35;
+			end
 		end
 	
 		--flying kick damage
@@ -927,12 +1360,35 @@ function CommonOutgoingHitSuccess(e)
 			flyingmaxdmg = flyingmindmg + (self:GetSkill(Skill.FlyingKick) / 2);
 			flyingdmg = Random.Real(flyingmindmg, flyingmaxdmg);
 			e.hit.damage_done = flyingdmg - mitigationac;
-			e.IgnoreDefault = true;
+
 			if (other:CastToClient():IsSitting()) then
 				e.hit.damage_done = flyingmaxdmg;
 			end
-			e = TryCriticalHit(e);
-			return e;
+
+			--damage discs
+			if (self:FindBuff(4676)) then
+				e.hit.damage_done = e.hit.damage_done * 2;
+			end
+			if (self:FindBuff(4675)) then
+				e.hit.damage_done = e.hit.damage_done * 2;
+			end
+			if (self:FindBuff(4512)) then
+				e.hit.damage_done = e.hit.damage_done * 2;
+			end
+			if (self:FindBuff(4498)) then
+				e.hit.damage_done = e.hit.damage_done * 1.35;
+			end
+			
+			--mitigation discs
+			if (other:FindBuff(4510)) then
+				e.hit.damage_done = e.hit.damage_done * .40;
+			end
+			if (other:FindBuff(4499)) then
+				e.hit.damage_done = e.hit.damage_done * .65;
+			end
+			if (other:FindBuff(4498)) then
+				e.hit.damage_done = e.hit.damage_done * 1.35;
+			end
 		end
 			
 		--kick and bash damage
@@ -950,41 +1406,105 @@ function CommonOutgoingHitSuccess(e)
 				maxkick = 1;
 				e.hit.damage_done = maxkick;
 			end
-			e = TryCriticalHit(e);
-			return e;
 			elseif (self:GetLevel() < 11) then
 				bashdmg = Random.Real(1, 7);
 				eq.debug("kick " .. bashdmg);
 				e.hit.damage_done = bashdmg - mitigationac;
-				e.IgnoreDefault = true;
 				if (other:CastToClient():IsSitting()) then
 					maxkick = 7;
 					e.hit.damage_done = maxkick;
 				end
-				e = TryCriticalHit(e);
-				return e;
+
+				--damage discs
+				if (self:FindBuff(4676)) then
+					e.hit.damage_done = e.hit.damage_done * 2;
+				end
+				if (self:FindBuff(4675)) then
+					e.hit.damage_done = e.hit.damage_done * 2;
+				end
+				if (self:FindBuff(4512)) then
+					e.hit.damage_done = e.hit.damage_done * 2;
+				end
+				if (self:FindBuff(4498)) then
+					e.hit.damage_done = e.hit.damage_done * 1.35;
+				end
+				
+				--mitigation discs
+				if (other:FindBuff(4510)) then
+					e.hit.damage_done = e.hit.damage_done * .40;
+				end
+				if (other:FindBuff(4499)) then
+					e.hit.damage_done = e.hit.damage_done * .65;
+				end
+				if (other:FindBuff(4498)) then
+					e.hit.damage_done = e.hit.damage_done * 1.35;
+				end
 			elseif (self:GetLevel() < 21) then
 				bashdmg = Random.Real(7, 15);
 				eq.debug("kick " .. bashdmg);
 				e.hit.damage_done = bashdmg - mitigationac;
-				e.IgnoreDefault = true;
 				if (other:CastToClient():IsSitting()) then
 					maxkick = 15;
 					e.hit.damage_done = maxkick;
 				end
-				e = TryCriticalHit(e);
-				return e;
+
+				--damage discs
+				if (self:FindBuff(4676)) then
+					e.hit.damage_done = e.hit.damage_done * 2;
+				end
+				if (self:FindBuff(4675)) then
+					e.hit.damage_done = e.hit.damage_done * 2;
+				end
+				if (self:FindBuff(4512)) then
+					e.hit.damage_done = e.hit.damage_done * 2;
+				end
+				if (self:FindBuff(4498)) then
+					e.hit.damage_done = e.hit.damage_done * 1.35;
+				end
+				
+				--mitigation discs
+				if (other:FindBuff(4510)) then
+					e.hit.damage_done = e.hit.damage_done * .40;
+				end
+				if (other:FindBuff(4499)) then
+					e.hit.damage_done = e.hit.damage_done * .65;
+				end
+				if (other:FindBuff(4498)) then
+					e.hit.damage_done = e.hit.damage_done * 1.35;
+				end
 			elseif (self:GetLevel() > 21) then
 				bashdmg = Random.Real(7, 27);
 				eq.debug("kick " .. bashdmg);
 				e.hit.damage_done = bashdmg - mitigationac;
-				e.IgnoreDefault = true;
 				if (other:CastToClient():IsSitting()) then
 					maxkick = 27;
 					e.hit.damage_done = maxkick;
 				end
-				e = TryCriticalHit(e);
-				return e;
+
+				--damage discs
+				if (self:FindBuff(4676)) then
+					e.hit.damage_done = e.hit.damage_done * 2;
+				end
+				if (self:FindBuff(4675)) then
+					e.hit.damage_done = e.hit.damage_done * 2;
+				end
+				if (self:FindBuff(4512)) then
+					e.hit.damage_done = e.hit.damage_done * 2;
+				end
+				if (self:FindBuff(4498)) then
+					e.hit.damage_done = e.hit.damage_done * 1.35;
+				end
+				
+				--mitigation discs
+				if (other:FindBuff(4510)) then
+					e.hit.damage_done = e.hit.damage_done * .40;
+				end
+				if (other:FindBuff(4499)) then
+					e.hit.damage_done = e.hit.damage_done * .65;
+				end
+				if (other:FindBuff(4498)) then
+					e.hit.damage_done = e.hit.damage_done * 1.35;
+				end
 			end
 		end
 	
@@ -999,7 +1519,7 @@ function CommonOutgoingHitSuccess(e)
 			dmg_bonus = BasicBonus + 1;
 		elseif (wepdelay <= 59) then
 			dmg_bonus = (BasicBonus * 2) + 1;
-		elseif (wepdelay <= 70) then
+		elseif (wepdelay >= 70) then
 			dmg_bonus = (BasicBonus * 3) + 1;
 		end
 	
@@ -1030,31 +1550,7 @@ function CommonOutgoingHitSuccess(e)
 			end
 		end
 
-		if e.hit.skill == 0 or e.hit.skill == 1 or e.hit.skill == 28 or e.hit.skill == 36 and itemtype ~= 35 then
-			eq.debug("offhand");
-			minimumdamage = weapondamage;
-			maximumdamage = minimumdamage + strbonus + playeratkbonus;
-
-			damage_roll = Random.Real(minimumdamage, maximumdamage);
-			if (self:GetLevel() < 11) then
-				if (damage_roll > 20) then
-				damage_roll = 20;
-				end
-			end
-			e.hit.damage_done = damage_roll;
-
-			if (other:CastToClient():IsSitting()) then
-				e.hit.damage_done = maximumdamage;
-			end
-	
-			eq.debug("mindmg " .. minimumdamage .. " maximumdmg " .. maximumdamage);
-			e = TryCriticalHit(e);
-			e.IgnoreDefault = true;
-			return e;
-		end
-
-
-		if e.hit.skill == 0 or e.hit.skill == 1 or e.hit.skill == 28 or e.hit.skill == 36 and itemtype ~= 35 then
+		if e.hit.skill == 0 or e.hit.skill == 1 or e.hit.skill == 28 or (e.hit.skill == 36 and itemtype ~= 35) then
 			eq.debug("1h");
 			minimumdamage = weapondamage + BasicBonus;
 			maximumdamage = minimumdamage + strbonus + playeratkbonus;
@@ -1067,19 +1563,39 @@ function CommonOutgoingHitSuccess(e)
 			end
 			mitigationac = mitigationac / 2;
 			e.hit.damage_done = damage_roll - mitigationac;
-
 			if (other:CastToClient():IsSitting()) then
 				e.hit.damage_done = maximumdamage;
 			end
-	
+			
+			--damage discs
+			if (self:FindBuff(4676)) then
+				e.hit.damage_done = e.hit.damage_done * 2;
+			end
+			if (self:FindBuff(4675)) then
+				e.hit.damage_done = e.hit.damage_done * 2;
+			end
+			if (self:FindBuff(4512)) then
+				e.hit.damage_done = e.hit.damage_done * 2;
+			end
+			if (self:FindBuff(4498)) then
+				e.hit.damage_done = e.hit.damage_done * 1.35;
+			end
+			
+			--mitigation discs
+			if (other:FindBuff(4510)) then
+				e.hit.damage_done = e.hit.damage_done * .40;
+			end
+			if (other:FindBuff(4499)) then
+				e.hit.damage_done = e.hit.damage_done * .65;
+			end
+			if (other:FindBuff(4498)) then
+				e.hit.damage_done = e.hit.damage_done * 1.35;
+			end
 			eq.debug("mindmg " .. minimumdamage .. " maximumdmg " .. maximumdamage);
-			e = TryCriticalHit(e);
-			e.IgnoreDefault = true;
-			return e;
 		end
 
 
-		if e.hit.skill == 2 or e.hit.skill == 3 or e.hit.skill == 36 and itemtype == 35 then
+		if e.hit.skill == 2 or e.hit.skill == 3 or (e.hit.skill == 36 and itemtype == 35) then
 			eq.debug("2h");
 			minimumdamage = (weapondamage) + dmg_bonus;
 			maximumdamage = ((minimumdamage) * 2) + playeratkbonus + strbonus;
@@ -1103,6 +1619,30 @@ function CommonOutgoingHitSuccess(e)
 				e.hit.damage_done = maximumdamage;
 			end
 		
+			--damage discs
+			if (self:FindBuff(4676)) then
+				e.hit.damage_done = e.hit.damage_done * 2;
+			end
+			if (self:FindBuff(4675)) then
+				e.hit.damage_done = e.hit.damage_done * 2;
+			end
+			if (self:FindBuff(4512)) then
+				e.hit.damage_done = e.hit.damage_done * 2;
+			end
+			if (self:FindBuff(4498)) then
+				e.hit.damage_done = e.hit.damage_done * 1.35;
+			end
+			
+			--mitigation discs
+			if (other:FindBuff(4510)) then
+				e.hit.damage_done = e.hit.damage_done * .40;
+			end
+			if (other:FindBuff(4499)) then
+				e.hit.damage_done = e.hit.damage_done * .65;
+			end
+			if (other:FindBuff(4498)) then
+				e.hit.damage_done = e.hit.damage_done * 1.35;
+			end
 
 			eq.debug("mindmg " .. minimumdamage .. " maximumdmg " .. maximumdamage);
 		end
@@ -1130,26 +1670,21 @@ function PVPResistSpell(e)
 	--eq.zone_emote(0, "Begin testing PVP spellresist function...");
 
 	--Level Check, if level is higher resist chance is higher.
-	if (e.self:GetLevel() >= e.caster:GetLevel()) then
-		eq.debug("Level Check");
-		leveldifference = e.self:GetLevel() - e.caster:GetLevel();
-		diff_cap = 40;
-		if (leveldifference >= 0) then
-			resistrate = 5 * (leveldifference + 1);
-			resistroll = Random.Real(1,100);
-			if (resistrate > diff_cap) then
-				resistrate = diff_cap;
-			end
-			if	(resistroll <= resistrate) then
-				return 0;
-			end
-		end
-	end
-	
-
-
-
-
+	--if (e.self:GetLevel() >= e.caster:GetLevel()) then
+	--	eq.debug("Level Check");
+	--	leveldifference = e.self:GetLevel() - e.caster:GetLevel();
+	--	diff_cap = 40;
+	--	if (leveldifference >= 0) then
+	--		resistrate = 5 * (leveldifference + 1);
+	--		resistroll = Random.Real(1,100);
+	--		if (resistrate > diff_cap) then
+	--			resistrate = diff_cap;
+	--		end
+	--		if	(resistroll <= resistrate) then
+	--			return 0;
+	--		end
+	--	end
+	--end
 
 	--Direct root hit
 	if (e.spell_id == 249 or e.spell_id == 76 or e.spell_id == 490 or e.spell_id == 77  or e.spell_id == 1719 or e.spell_id == 1608 or e.spell_id == 230 or e.spell_id == 131 or e.spell_id == 132 or e.spell_id == 133 or e.spell_id == 1633 or e.spell_id == 969) then
@@ -1167,7 +1702,7 @@ function PVPResistSpell(e)
 					return e;
 				end
 			elseif (e.self:GetMR() <= 59 and e.self:GetMR() >= 45) then
-				eq.debug("spell check");
+				eq.debug("root hit check");
 				if resistchance <= 50 then
 					e.ReturnValue = 0;
 					e.IgnoreDefault = true;
@@ -1178,7 +1713,7 @@ function PVPResistSpell(e)
 					return e;
 				end
 			elseif (e.self:GetMR() < 45 and e.self:GetMR() > 30) then
-				eq.debug("spell check");
+				eq.debug("root hit check");
 				if resistchance <= 15 then
 					e.ReturnValue = 0;
 					e.IgnoreDefault = true;
@@ -1189,7 +1724,7 @@ function PVPResistSpell(e)
 					return e;
 				end
 			elseif (e.self:GetMR() < 30) then
-				eq.debug("spell check");
+				eq.debug("root hit check");
 				if resistchance <= 2 then
 					e.ReturnValue = 0;
 					e.IgnoreDefault = true;
@@ -1201,7 +1736,7 @@ function PVPResistSpell(e)
 				end
 			end
 		elseif (e.self:GetLevel() > 20 and e.self:GetLevel() < 40) then
-			eq.debug("root check");
+			eq.debug("root hit check");
 			resistchance = Random.Real(1, 100);
 			if (e.self:GetMR() >= 90 and e.self:GetMR() > 89) then
 				if resistchance < 98 then
@@ -1214,7 +1749,7 @@ function PVPResistSpell(e)
 					return e;
 				end
 			elseif (e.self:GetMR() < 90 and e.self:GetMR() >= 60) then
-				eq.debug("spell check");
+				eq.debug("root hit check");
 				if resistchance <= 50 then
 					e.ReturnValue = 0;
 					e.IgnoreDefault = true;
@@ -1225,7 +1760,7 @@ function PVPResistSpell(e)
 					return e;
 				end
 			elseif (e.self:GetMR() < 60 and e.self:GetMR() > 30) then
-				eq.debug("spell check");
+				eq.debug("root hit check");
 				if resistchance <= 15 then
 					e.ReturnValue = 0;
 					e.IgnoreDefault = true;
@@ -1236,7 +1771,7 @@ function PVPResistSpell(e)
 					return e;
 				end
 			elseif (e.self:GetMR() < 30 ) then
-				eq.debug("spell check");
+				eq.debug("root hit check");
 				if resistchance <= 2 then
 					e.ReturnValue = 0;
 					e.IgnoreDefault = true;
@@ -1248,7 +1783,7 @@ function PVPResistSpell(e)
 				end
 			end
 		elseif (e.self:GetLevel() >= 40 and e.self:GetLevel() <= 60) then
-			eq.debug("root check");
+			eq.debug("root hit check");
 			resistchance = Random.Real(1, 100);
 			if (e.self:GetMR() >= 120) then
 				if resistchance < 98 then
@@ -1261,7 +1796,7 @@ function PVPResistSpell(e)
 					return e;
 				end
 			elseif (e.self:GetMR() < 120 and e.self:GetMR() > 90) then
-				eq.debug("spell check");
+				eq.debug("root hit check");
 				if resistchance <= 50 then
 					e.ReturnValue = 0;
 					e.IgnoreDefault = true;
@@ -1272,7 +1807,7 @@ function PVPResistSpell(e)
 					return e;
 				end
 			elseif (e.self:GetMR() < 90 and e.self:GetMR() > 60) then
-				eq.debug("spell check");
+				eq.debug("root hit check");
 				if resistchance <= 15 then
 					e.ReturnValue = 0;
 					e.IgnoreDefault = true;
@@ -1283,7 +1818,7 @@ function PVPResistSpell(e)
 					return e;
 				end
 			elseif (e.self:GetMR() < 60 ) then
-				eq.debug("spell check");
+				eq.debug("root hit check");
 				if resistchance <= 2 then
 					e.ReturnValue = 0;
 					e.IgnoreDefault = true;
@@ -1960,12 +2495,12 @@ function PVPResistSpell(e)
 	end
 
 	--Swarm line, unresistable druid dots
-	if (e.spell_id == 264 or e.spell_id == 99 or e.spell_id == 665 or e.spell_id == 259 or e.spell_id == 665 or e.spell_id == 1601) then
-		eq.debug("Druid Swarm Check");
-		e.ReturnValue = 100;
-		e.IgnoreDefault = true;
-		return e;
-	end
+	--if (e.spell_id == 264 or e.spell_id == 99 or e.spell_id == 665 or e.spell_id == 259 or e.spell_id == 665 or e.spell_id == 1601) then
+	--	eq.debug("Druid Swarm Check");
+	--	e.ReturnValue = 100;
+	--	e.IgnoreDefault = true;
+	--	return e;
+	--end
 
 	return e;
 end
