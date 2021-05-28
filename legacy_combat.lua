@@ -721,7 +721,12 @@ function CommonOutgoingHitSuccess(e)
 			mitigationac = e.other:GetAC() / 15;
 			if (e.self:GetLevel() < 11) then
 				bashdmg = Random.Real(1, 7);
-				e.hit.damage_done = bashdmg - mitigationac;
+				finaldmg = bashdmg - mitigationac;
+				if finaldmg < 1 then
+					finaldmg = 1;
+				end
+
+				e.hit.damage_done = finaldmg;
 				e.IgnoreDefault = true;
 				if (e.other:IsClient() and e.other:CastToClient():IsSitting()) then
 					maxkick = 7;
@@ -731,7 +736,12 @@ function CommonOutgoingHitSuccess(e)
 				return e;
 			elseif (e.self:GetLevel() < 21) then
 				bashdmg = Random.Real(7, 15);
-				e.hit.damage_done = bashdmg - mitigationac;
+				finaldmg = bashdmg - mitigationac;
+				if finaldmg < 1 then
+					finaldmg = 1;
+				end
+
+				e.hit.damage_done = finaldmg;
 				e.IgnoreDefault = true;
 				if (e.other:IsClient() and e.other:CastToClient():IsSitting()) then
 					maxkick = 15;
@@ -741,7 +751,12 @@ function CommonOutgoingHitSuccess(e)
 				return e;
 			elseif (e.self:GetLevel() > 21) then
 				bashdmg = Random.Real(7, 27);
-				e.hit.damage_done = bashdmg - mitigationac;
+				finaldmg = bashdmg - mitigationac;
+				if finaldmg < 1 then
+					finaldmg = 1;
+				end
+
+				e.hit.damage_done = finaldmg;
 				e.IgnoreDefault = true;
 				if (e.other:IsClient() and e.other:CastToClient():IsSitting()) then
 					maxkick = 27;
@@ -998,7 +1013,12 @@ function CommonOutgoingHitSuccess(e)
 			elseif (self:GetLevel() < 21) then
 				bashdmg = Random.Real(7, 15);
 				eq.debug("kick " .. bashdmg);
-				e.hit.damage_done = bashdmg - mitigationac;
+				finaldmg = bashdmg - mitigationac;
+				if finaldmg < 1 then
+					finaldmg = 1;
+				end
+
+				e.hit.damage_done = finaldmg;
 
 				--damage discs
 				if (self:FindBuff(4676)) then
@@ -1017,8 +1037,12 @@ function CommonOutgoingHitSuccess(e)
 			elseif (self:GetLevel() > 21) then
 				bashdmg = Random.Real(7, 27);
 				eq.debug("kick " .. bashdmg);
-				e.hit.damage_done = bashdmg - mitigationac;
+				finaldmg = bashdmg - mitigationac;
+				if finaldmg < 1 then
+					finaldmg = 1;
+				end
 
+				e.hit.damage_done = finaldmg;
 				--damage discs
 				if (self:FindBuff(4676)) then
 					e.hit.damage_done = e.hit.damage_done * 2;
@@ -1444,7 +1468,14 @@ function CommonOutgoingHitSuccess(e)
 			elseif (self:GetLevel() < 11) then
 				bashdmg = Random.Real(1, 7);
 				eq.debug("kick " .. bashdmg);
-				e.hit.damage_done = bashdmg - mitigationac;
+				
+				finaldmg = bashdmg - mitigationac;
+				if finaldmg < 1 then
+					finaldmg = 1;
+				end
+
+				e.hit.damage_done = finaldmg;
+
 				if (other:CastToClient():IsSitting()) then
 					maxkick = 7;
 					e.hit.damage_done = maxkick;
@@ -1477,7 +1508,14 @@ function CommonOutgoingHitSuccess(e)
 			elseif (self:GetLevel() < 21) then
 				bashdmg = Random.Real(7, 15);
 				eq.debug("kick " .. bashdmg);
-				e.hit.damage_done = bashdmg - mitigationac;
+				
+				finaldmg = bashdmg - mitigationac;
+				if finaldmg < 1 then
+					finaldmg = 1;
+				end
+
+				e.hit.damage_done = finaldmg;
+
 				if (other:CastToClient():IsSitting()) then
 					maxkick = 15;
 					e.hit.damage_done = maxkick;
@@ -1510,7 +1548,14 @@ function CommonOutgoingHitSuccess(e)
 			elseif (self:GetLevel() > 21) then
 				bashdmg = Random.Real(7, 27);
 				eq.debug("kick " .. bashdmg);
-				e.hit.damage_done = bashdmg - mitigationac;
+				
+				finaldmg = bashdmg - mitigationac;
+				if finaldmg < 1 then
+					finaldmg = 1;
+				end
+
+				e.hit.damage_done = finaldmg;
+
 				if (other:CastToClient():IsSitting()) then
 					maxkick = 27;
 					e.hit.damage_done = maxkick;
