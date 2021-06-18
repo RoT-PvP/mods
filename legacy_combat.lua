@@ -718,7 +718,7 @@ function CommonOutgoingHitSuccess(e)
 	--kick and bash damage for NPCS
 	if (e.self:IsNPC() or e.self:IsPet()) then
 		if (e.hit.skill == 30 or e.hit.skill == 10) then
-			mitigationac = e.other:GetAC() / 15;
+			mitigationac = e.other:GetAC() / 10;
 			if (e.self:GetLevel() < 11) then
 				bashdmg = Random.Real(1, 7);
 				finaldmg = bashdmg - mitigationac;
@@ -771,7 +771,7 @@ function CommonOutgoingHitSuccess(e)
 	--Client to NPC damage.
 	if (e.self:IsClient() and e.other:IsNPC()) then
 		if (e.hit.skill == 30 or e.hit.skill == 10) then
-			mitigationac = e.other:GetAC() / 15;
+			mitigationac = e.other:GetAC() / 10;
 			if (e.self:GetLevel() < 11) then
 				bashdmg = Random.Real(1, 7);
 				e.hit.damage_done = bashdmg - mitigationac;
@@ -821,9 +821,9 @@ function CommonOutgoingHitSuccess(e)
 		weaponatk = (self_weapon:GetItem():Attack() /10 )
 		strbonus = (self:GetSTR() /12);
 		dexbonus = (self:GetDEX() /12);
-		playeratkbonus = (self:GetATK() /30);
-		defenderac = (e.other:GetItemBonuses():AC());
-		mitigationac = (defenderac / 15);
+		playeratkbonus = (self:GetATK() /15);
+		defenderac = (e.other:GetAC());
+		mitigationac = (defenderac / 10);
 		offensivemod = ((self:GetSkill(Skill.Offense) + self:GetSTR()) / 100);
 		eq.debug("attack mod " .. playeratkbonus);
 		eq.debug("offense mod " .. offensivemod);
@@ -1104,22 +1104,24 @@ function CommonOutgoingHitSuccess(e)
 
 		if e.hit.skill == 0 or e.hit.skill == 1 or e.hit.skill == 28 or (e.hit.skill == 36 and itemtype ~= 35) then
 			eq.debug("1h");
-			minimumdamage = weapondamage;
-			maximumdamage = (weapondamage * offensivemod) + dmg_bonus;
+			minimumdamage = 1;
+			maximumdamage = ((weapondamage * offensivemod) + dmg_bonus)  - mitigationac;
 
 			local damage_roll = Random.Real(minimumdamage, maximumdamage);
 			local attack_roll = Random.Real(0, playeratkbonus);
 			local str_roll = Random.Real(0, strbonus);
 			final_damage = damage_roll + attack_roll + str_roll;
-			if (final_damage > maximumdamage) then
-				final_damage = maximumdamage;
-			end 
 			if (self:GetLevel() < 11) then
 				if (final_damage > 20) then
 					final_damage = 20;
 				end
 			end
-			e.hit.damage_done = final_damage - mitigationac;
+			final_damage = final_damage;
+
+			if final_damage < 1 then
+				final_damage = 1;
+			end
+			e.hit.damage_done = final_damage;
 			
 			--damage discs
 			if (self:FindBuff(4676)) then
@@ -1151,12 +1153,8 @@ function CommonOutgoingHitSuccess(e)
 
 		if e.hit.skill == 2 or e.hit.skill == 3 or (e.hit.skill == 36 and itemtype == 35) then
 			eq.debug("2h");
-			if (self:GetLevel() < 30) then
-				minimumdamage = 1;
-			else 
-				minimumdamage = weapondamage;
-			end
-			maximumdamage = ((weapondamage * offensivemod) + dmg_bonus);
+			minimumdamage = 1;
+			maximumdamage = ((weapondamage * offensivemod) + dmg_bonus)  - mitigationac;
 			local damage_roll = Random.Real(minimumdamage, maximumdamage);
 			local attack_roll = Random.Real(0, (playeratkbonus));
 			local str_roll = Random.Real(0, (strbonus));
@@ -1168,7 +1166,11 @@ function CommonOutgoingHitSuccess(e)
 					final_damage = 20;
 				end
 			end
-			e.hit.damage_done = final_damage - mitigationac;
+			final_damage = final_damage;
+			if final_damage < 1 then
+				final_damage = 1;
+			end
+			e.hit.damage_done = final_damage;
 			
 		
 			--damage discs
@@ -1221,9 +1223,9 @@ function CommonOutgoingHitSuccess(e)
 		weaponatk = (self_weapon:GetItem():Attack() /10 )
 		strbonus = (self:GetSTR() /12);
 		dexbonus = (self:GetDEX() /12);
-		playeratkbonus = (self:GetATK() /30);
-		defenderac = (e.other:GetItemBonuses():AC());
-		mitigationac = (defenderac / 15);
+		playeratkbonus = (self:GetATK() /15);
+		defenderac = (e.other:GetDisplayAC());
+		mitigationac = (defenderac / 75);
 		offensivemod = ((self:GetSkill(Skill.Offense) + self:GetSTR()) / 100);
 		eq.debug("attack mod " .. playeratkbonus);
 		eq.debug("offense mod " .. offensivemod);
@@ -1299,17 +1301,18 @@ function CommonOutgoingHitSuccess(e)
 			else
 				bstabstr = self:GetSTR();
 			end
-			defenderac = defenderac ;
 			attackmod = self:GetATK() / 5;
 			backstabmod = 2 + (self:GetSkill(Skill.Backstab) * 0.02 );
 			backstabmin = (((weapondamage * backstabmod) * bstabstr) / 100) + attackmod;
 			backstabmax = (((self:GetSkill(Skill.Offense) + bstabstr) * (weapondamage * backstabmod)) / 70); 
 			backstabdamage = Random.Real(backstabmin, backstabmax);
-			e.hit.damage_done = backstabdamage - defenderac;
+
+			backstabac = defenderac / 75;
+			e.hit.damage_done = backstabdamage - backstabac;
 			eq.debug("backstabmax " .. backstabmax);
 
 			if (other:CastToClient():IsSitting()) then
-				e.hit.damage_done = backstabmax - defenderac;
+				e.hit.damage_done = backstabmax - backstabac;
 			end
 
 			if (self:FindBuff(4676)) then
@@ -1632,24 +1635,27 @@ function CommonOutgoingHitSuccess(e)
 
 		if e.hit.skill == 0 or e.hit.skill == 1 or e.hit.skill == 28 or (e.hit.skill == 36 and itemtype ~= 35) then
 			eq.debug("1h");
-			minimumdamage = weapondamage;
-			maximumdamage = (weapondamage * offensivemod) + dmg_bonus;
+			minimumdamage = 1;
+			maximumdamage = ((weapondamage * offensivemod) + dmg_bonus)  - mitigationac;
 
 			local damage_roll = Random.Real(minimumdamage, maximumdamage);
 			local attack_roll = Random.Real(0, playeratkbonus);
 			local str_roll = Random.Real(0, strbonus);
 			final_damage = damage_roll + attack_roll + str_roll;
-			if (final_damage > maximumdamage) then
-				final_damage = maximumdamage;
-			end 
 			if (self:GetLevel() < 11) then
 				if (final_damage > 20) then
 					final_damage = 20;
 				end
 			end
-			e.hit.damage_done = final_damage - mitigationac;
+			final_damage = final_damage;
+
+			if final_damage < 1 then
+				final_damage = 1;
+			end
+			e.hit.damage_done = final_damage;
+
 			if (other:CastToClient():IsSitting()) then
-				e.hit.damage_done = maximumdamage;
+				e.hit.damage_done = maximumdamage + playeratkbonus + strbonus;
 			end
 			
 			--damage discs
@@ -1682,12 +1688,9 @@ function CommonOutgoingHitSuccess(e)
 
 		if e.hit.skill == 2 or e.hit.skill == 3 or (e.hit.skill == 36 and itemtype == 35) then
 			eq.debug("2h");
-			if (self:GetLevel() < 30) then
-				minimumdamage = 1;
-			else 
-				minimumdamage = weapondamage;
-			end
-			maximumdamage = ((weapondamage * offensivemod) + dmg_bonus);
+
+			minimumdamage = 1;
+			maximumdamage = ((weapondamage * offensivemod) + dmg_bonus)  - mitigationac; 
 			local damage_roll = Random.Real(minimumdamage, maximumdamage);
 			local attack_roll = Random.Real(0, (playeratkbonus));
 			local str_roll = Random.Real(0, (strbonus));
@@ -1698,11 +1701,15 @@ function CommonOutgoingHitSuccess(e)
 					final_damage = 20;
 				end
 			end
-			e.hit.damage_done = final_damage - mitigationac;
+
+			if final_damage < 1 then
+				final_damage = 1;
+			end
+			e.hit.damage_done = final_damage;
 			
 	
 			if (other:CastToClient():IsSitting()) then
-				e.hit.damage_done = maximumdamage;
+				e.hit.damage_done = maximumdamage + playeratkbonus + strbonus;
 			end
 		
 			--damage discs
