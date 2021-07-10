@@ -825,6 +825,9 @@ function CommonOutgoingHitSuccess(e)
 		defenderac = (e.other:GetAC());
 		mitigationac = (defenderac / 10);
 		offensivemod = ((self:GetSkill(Skill.Offense) + self:GetSTR()) / 100);
+		if (offensivemod < 2) then
+			offensivemod = 2;
+		end
 		eq.debug("attack mod " .. playeratkbonus);
 		eq.debug("offense mod " .. offensivemod);
 		eq.debug("AC " .. defenderac);
@@ -904,11 +907,19 @@ function CommonOutgoingHitSuccess(e)
 	
 		--throwing damage
 		if e.hit.skill == 51 then
-			bowmindmg = rangedweapondamage + BasicBonus;
-			bowmaxdmg = bowmindmg + dexbonus + playeratkbonus;
-			bowdmg = Random.Real(bowmindmg, bowmaxdmg);
+			bowmindmg = 1;
+			bowmaxdmg = (rangedweapondamage * offensivemod)  - mitigationac;
+			local damage_roll = Random.Real(bowmindmg, bowmaxdmg);
+			local attack_roll = Random.Real(0, (playeratkbonus));
+			local dex_roll = Random.Real(0, (dexbonus));
+			final_damage = damage_roll + attack_roll + dex_roll;
 			eq.debug("bow dmg " .. bowmindmg);
-			e.hit.damage_done = bowdmg - mitigationac;
+			if (self:GetLevel() < 11) then
+				if (final_damage > 20) then
+					final_damage = 20;
+				end
+			end
+			e.hit.damage_done = final_damage;
 
 			if (self:FindBuff(4676)) then
 				e.hit.damage_done = e.hit.damage_done * 2;
@@ -927,16 +938,19 @@ function CommonOutgoingHitSuccess(e)
 	
 		--bow damage
 		if e.hit.skill == 7 then
-			bowmindmg = rangedweapondamage + BasicBonus + ammoweapondamage;
-			bowmaxdmg = bowmindmg + dexbonus + playeratkbonus;
-			bowdmg = Random.Real(bowmindmg, bowmaxdmg);
+			bowmindmg = 1;
+			bowmaxdmg = ((rangedweapondamage + ammoweapondamage) * offensivemod)  - mitigationac;
+			local damage_roll = Random.Real(bowmindmg, bowmaxdmg);
+			local attack_roll = Random.Real(0, (playeratkbonus));
+			local dex_roll = Random.Real(0, (dexbonus));
+			final_damage = damage_roll + attack_roll + dex_roll;
 			eq.debug("bow dmg " .. bowmindmg);
 			if (self:GetLevel() < 11) then
-				if (bowdmg > 20) then
-					bowdmg = 20;
+				if (final_damage > 20) then
+					final_damage = 20;
 				end
 			end
-			e.hit.damage_done = bowdmg - mitigationac;
+			e.hit.damage_done = final_damage;
 
 			--damage discs
 			if (self:FindBuff(4676)) then
@@ -1334,11 +1348,19 @@ function CommonOutgoingHitSuccess(e)
 	
 		--throwing damage
 		if e.hit.skill == 51 then
-			bowmindmg = rangedweapondamage + BasicBonus;
-			bowmaxdmg = bowmindmg + dexbonus + playeratkbonus;
-			bowdmg = Random.Real(bowmindmg, bowmaxdmg);
+			bowmindmg = 1;
+			bowmaxdmg = (rangedweapondamage * offensivemod)  - mitigationac;
+			local damage_roll = Random.Real(bowmindmg, bowmaxdmg);
+			local attack_roll = Random.Real(0, (playeratkbonus));
+			local dex_roll = Random.Real(0, (dexbonus));
+			final_damage = damage_roll + attack_roll + dex_roll;
 			eq.debug("bow dmg " .. bowmindmg);
-			e.hit.damage_done = bowdmg - mitigationac;
+			if (self:GetLevel() < 11) then
+				if (final_damage > 20) then
+					final_damage = 20;
+				end
+			end
+			e.hit.damage_done = final_damage;
 
 			if (other:CastToClient():IsSitting()) then
 				e.hit.damage_done = bowmaxdmg;
@@ -1373,16 +1395,20 @@ function CommonOutgoingHitSuccess(e)
 	
 		--bow damage
 		if e.hit.skill == 7 then
-			bowmindmg = rangedweapondamage + BasicBonus + ammoweapondamage;
-			bowmaxdmg = bowmindmg + dexbonus + playeratkbonus;
-			bowdmg = Random.Real(bowmindmg, bowmaxdmg);
+			bowmindmg = 1;
+			bowmaxdmg = ((rangedweapondamage + ammoweapondamage) * offensivemod)  - mitigationac;
+			local damage_roll = Random.Real(bowmindmg, bowmaxdmg);
+			local attack_roll = Random.Real(0, (playeratkbonus));
+			local dex_roll = Random.Real(0, (dexbonus));
+			final_damage = damage_roll + attack_roll + dex_roll;
+
 			eq.debug("bow dmg " .. bowmindmg);
 			if (self:GetLevel() < 11) then
-				if (bowdmg > 20) then
-					bowdmg = 20;
+				if (final_damage > 20) then
+					final_damage = 20;
 				end
 			end
-			e.hit.damage_done = bowdmg - mitigationac;
+			e.hit.damage_done = final_damage;
 			if (other:CastToClient():IsSitting()) then
 				e.hit.damage_done = bowmaxdmg;
 			end
