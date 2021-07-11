@@ -828,10 +828,6 @@ function CommonOutgoingHitSuccess(e)
 		if (offensivemod < 2) then
 			offensivemod = 2;
 		end
-		eq.debug("attack mod " .. playeratkbonus);
-		eq.debug("offense mod " .. offensivemod);
-		eq.debug("AC " .. defenderac);
-		eq.debug("Mitigated DMG " .. mitigationac);
 
 		--delay and bonus
 		wepdelay = self_weapon:GetItem():Delay()
@@ -842,9 +838,6 @@ function CommonOutgoingHitSuccess(e)
 		end
 		itemtype = self_weapon:GetItem():ItemType()
 		itemtypeoffhand = off_hand:GetItem():ItemType()
-		eq.debug("itemtype " .. itemtype);
-	
-		eq.debug("playeratkdmg " .. playeratkbonus .. " weaponatkdmg " .. weaponatk);
 	
 		--Str Bonus Cap
 		if (self:GetLevel() < 11) then
@@ -894,7 +887,6 @@ function CommonOutgoingHitSuccess(e)
 			backstabmax = (((self:GetSkill(Skill.Offense) + bstabstr) * (weapondamage * backstabmod)) / 70); 
 			backstabdamage = Random.Real(backstabmin, backstabmax);
 			e.hit.damage_done = backstabdamage - defenderac;
-			eq.debug("backstabmax " .. backstabmax);
 
 			if (other:CastToClient():IsSitting()) then
 				e.hit.damage_done = backstabmax - defenderac;
@@ -913,7 +905,6 @@ function CommonOutgoingHitSuccess(e)
 			local attack_roll = Random.Real(0, (playeratkbonus));
 			local dex_roll = Random.Real(0, (dexbonus));
 			final_damage = damage_roll + attack_roll + dex_roll;
-			eq.debug("bow dmg " .. bowmindmg);
 			if (self:GetLevel() < 11) then
 				if (final_damage > 20) then
 					final_damage = 20;
@@ -944,7 +935,6 @@ function CommonOutgoingHitSuccess(e)
 			local attack_roll = Random.Real(0, (playeratkbonus));
 			local dex_roll = Random.Real(0, (dexbonus));
 			final_damage = damage_roll + attack_roll + dex_roll;
-			eq.debug("bow dmg " .. bowmindmg);
 			if (self:GetLevel() < 11) then
 				if (final_damage > 20) then
 					final_damage = 20;
@@ -998,7 +988,6 @@ function CommonOutgoingHitSuccess(e)
 		if e.hit.skill == 30 or e.hit.skill == 10 then
 			if (self:CastToClient():GetSkill(Skill.Bash) <= 1 and e.hit.skill == 10) then
 			bashdmg = 1;
-			eq.debug("kick " .. bashdmg);
 			finaldmg = bashdmg - mitigationac;
 			if finaldmg < 1 then
 				finaldmg = 1;
@@ -1007,7 +996,6 @@ function CommonOutgoingHitSuccess(e)
 			e.IgnoreDefault = true;
 			elseif (self:GetLevel() < 11) then
 				bashdmg = Random.Real(1, 7);
-				eq.debug("kick " .. bashdmg);
 				e.hit.damage_done = bashdmg - mitigationac;
 
 				--damage discs
@@ -1026,7 +1014,6 @@ function CommonOutgoingHitSuccess(e)
 				
 			elseif (self:GetLevel() < 21) then
 				bashdmg = Random.Real(7, 15);
-				eq.debug("kick " .. bashdmg);
 				finaldmg = bashdmg - mitigationac;
 				if finaldmg < 1 then
 					finaldmg = 1;
@@ -1050,7 +1037,6 @@ function CommonOutgoingHitSuccess(e)
 				
 			elseif (self:GetLevel() > 21) then
 				bashdmg = Random.Real(7, 27);
-				eq.debug("kick " .. bashdmg);
 				finaldmg = bashdmg - mitigationac;
 				if finaldmg < 1 then
 					finaldmg = 1;
@@ -1116,8 +1102,7 @@ function CommonOutgoingHitSuccess(e)
 			end
 		end
 
-		if e.hit.skill == 0 or e.hit.skill == 1 or e.hit.skill == 28 or (e.hit.skill == 36 and itemtype ~= 35) then
-			eq.debug("1h");
+		if e.hit.skill == 0 or e.hit.skill == 1 or e.hit.skill == 28 or (e.hit.skill == 36 and itemtype ~= 35) then --1her
 			minimumdamage = 1;
 			maximumdamage = ((weapondamage * offensivemod) + dmg_bonus)  - mitigationac;
 
@@ -1161,19 +1146,16 @@ function CommonOutgoingHitSuccess(e)
 			if (other:FindBuff(4498)) then
 				e.hit.damage_done = e.hit.damage_done * 1.35;
 			end
-			eq.debug("mindmg " .. minimumdamage .. " maximumdmg " .. maximumdamage);
 		end
 
 
-		if e.hit.skill == 2 or e.hit.skill == 3 or (e.hit.skill == 36 and itemtype == 35) then
-			eq.debug("2h");
+		if e.hit.skill == 2 or e.hit.skill == 3 or (e.hit.skill == 36 and itemtype == 35) then --2her
 			minimumdamage = 1;
 			maximumdamage = ((weapondamage * offensivemod) + dmg_bonus)  - mitigationac;
 			local damage_roll = Random.Real(minimumdamage, maximumdamage);
 			local attack_roll = Random.Real(0, (playeratkbonus));
 			local str_roll = Random.Real(0, (strbonus));
 			final_damage = damage_roll + attack_roll + str_roll;
-			eq.debug("final_damage " .. final_damage);
 
 			if (self:GetLevel() < 11) then
 				if (final_damage > 20) then
@@ -1211,8 +1193,6 @@ function CommonOutgoingHitSuccess(e)
 			if (other:FindBuff(4498)) then
 				e.hit.damage_done = e.hit.damage_done * 1.35;
 			end
-
-			eq.debug("mindmg " .. minimumdamage .. " maximumdmg " .. maximumdamage);
 		end
 	e = TryCriticalHit(e);
 	e.IgnoreDefault = true;
@@ -1241,10 +1221,6 @@ function CommonOutgoingHitSuccess(e)
 		defenderac = (e.other:GetDisplayAC());
 		mitigationac = (defenderac / 75);
 		offensivemod = ((self:GetSkill(Skill.Offense) + self:GetSTR()) / 100);
-		eq.debug("attack mod " .. playeratkbonus);
-		eq.debug("offense mod " .. offensivemod);
-		eq.debug("AC " .. defenderac);
-		eq.debug("Mitigated DMG " .. mitigationac);
 
 		--delay and bonus
 		wepdelay = self_weapon:GetItem():Delay()
@@ -1255,9 +1231,6 @@ function CommonOutgoingHitSuccess(e)
 		end
 		itemtype = self_weapon:GetItem():ItemType()
 		itemtypeoffhand = off_hand:GetItem():ItemType()
-		eq.debug("itemtype " .. itemtype);
-	
-		eq.debug("playeratkdmg " .. playeratkbonus .. " weaponatkdmg " .. weaponatk);
 	
 		--Str Bonus Cap
 		if (self:GetLevel() < 11) then
@@ -1323,7 +1296,6 @@ function CommonOutgoingHitSuccess(e)
 
 			backstabac = defenderac / 75;
 			e.hit.damage_done = backstabdamage - backstabac;
-			eq.debug("backstabmax " .. backstabmax);
 
 			if (other:CastToClient():IsSitting()) then
 				e.hit.damage_done = backstabmax - backstabac;
@@ -1354,7 +1326,6 @@ function CommonOutgoingHitSuccess(e)
 			local attack_roll = Random.Real(0, (playeratkbonus));
 			local dex_roll = Random.Real(0, (dexbonus));
 			final_damage = damage_roll + attack_roll + dex_roll;
-			eq.debug("bow dmg " .. bowmindmg);
 			if (self:GetLevel() < 11) then
 				if (final_damage > 20) then
 					final_damage = 20;
@@ -1402,7 +1373,6 @@ function CommonOutgoingHitSuccess(e)
 			local dex_roll = Random.Real(0, (dexbonus));
 			final_damage = damage_roll + attack_roll + dex_roll;
 
-			eq.debug("bow dmg " .. bowmindmg);
 			if (self:GetLevel() < 11) then
 				if (final_damage > 20) then
 					final_damage = 20;
@@ -1483,7 +1453,6 @@ function CommonOutgoingHitSuccess(e)
 		if e.hit.skill == 30 or e.hit.skill == 10 then
 			if (self:CastToClient():GetSkill(Skill.Bash) <= 1 and e.hit.skill == 10) then
 			bashdmg = 1;
-			eq.debug("kick " .. bashdmg);
 			finaldmg = bashdmg - mitigationac;
 			if finaldmg < 1 then
 				finaldmg = 1;
@@ -1496,7 +1465,6 @@ function CommonOutgoingHitSuccess(e)
 			end
 			elseif (self:GetLevel() < 11) then
 				bashdmg = Random.Real(1, 7);
-				eq.debug("kick " .. bashdmg);
 				
 				finaldmg = bashdmg - mitigationac;
 				if finaldmg < 1 then
@@ -1536,7 +1504,6 @@ function CommonOutgoingHitSuccess(e)
 				end
 			elseif (self:GetLevel() < 21) then
 				bashdmg = Random.Real(7, 15);
-				eq.debug("kick " .. bashdmg);
 				
 				finaldmg = bashdmg - mitigationac;
 				if finaldmg < 1 then
@@ -1576,7 +1543,6 @@ function CommonOutgoingHitSuccess(e)
 				end
 			elseif (self:GetLevel() > 21) then
 				bashdmg = Random.Real(7, 27);
-				eq.debug("kick " .. bashdmg);
 				
 				finaldmg = bashdmg - mitigationac;
 				if finaldmg < 1 then
@@ -1659,8 +1625,7 @@ function CommonOutgoingHitSuccess(e)
 			end
 		end
 
-		if e.hit.skill == 0 or e.hit.skill == 1 or e.hit.skill == 28 or (e.hit.skill == 36 and itemtype ~= 35) then
-			eq.debug("1h");
+		if e.hit.skill == 0 or e.hit.skill == 1 or e.hit.skill == 28 or (e.hit.skill == 36 and itemtype ~= 35) then --1her
 			minimumdamage = 1;
 			maximumdamage = ((weapondamage * offensivemod) + dmg_bonus)  - mitigationac;
 
@@ -1708,12 +1673,10 @@ function CommonOutgoingHitSuccess(e)
 			if (other:FindBuff(4498)) then
 				e.hit.damage_done = e.hit.damage_done * 1.35;
 			end
-			eq.debug("mindmg " .. minimumdamage .. " maximumdmg " .. maximumdamage);
 		end
 
 
-		if e.hit.skill == 2 or e.hit.skill == 3 or (e.hit.skill == 36 and itemtype == 35) then
-			eq.debug("2h");
+		if e.hit.skill == 2 or e.hit.skill == 3 or (e.hit.skill == 36 and itemtype == 35) then --2her
 
 			minimumdamage = 1;
 			maximumdamage = ((weapondamage * offensivemod) + dmg_bonus)  - mitigationac; 
@@ -1763,7 +1726,6 @@ function CommonOutgoingHitSuccess(e)
 				e.hit.damage_done = e.hit.damage_done * 1.35;
 			end
 
-			eq.debug("mindmg " .. minimumdamage .. " maximumdmg " .. maximumdamage);
 		end
 	e = TryCriticalHit(e);
 	e.IgnoreDefault = true;
@@ -1808,7 +1770,6 @@ function PVPResistSpell(e)
 	--Direct root hit
 	if (e.spell_id == 249 or e.spell_id == 76 or e.spell_id == 490 or e.spell_id == 77  or e.spell_id == 1719 or e.spell_id == 1608 or e.spell_id == 230 or e.spell_id == 131 or e.spell_id == 132 or e.spell_id == 133 or e.spell_id == 1633 or e.spell_id == 969) then
 		if (e.self:GetLevel() <= 20) then
-			eq.debug("root hit check");
 			resistchance = Random.Real(1, 100);
 			if (e.self:GetMR() >= 60) then
 				if resistchance < 98 then
@@ -1821,7 +1782,6 @@ function PVPResistSpell(e)
 					return e;
 				end
 			elseif (e.self:GetMR() <= 59 and e.self:GetMR() >= 45) then
-				eq.debug("root hit check");
 				if resistchance <= 50 then
 					e.ReturnValue = 0;
 					e.IgnoreDefault = true;
@@ -1832,7 +1792,6 @@ function PVPResistSpell(e)
 					return e;
 				end
 			elseif (e.self:GetMR() < 45 and e.self:GetMR() > 30) then
-				eq.debug("root hit check");
 				if resistchance <= 15 then
 					e.ReturnValue = 0;
 					e.IgnoreDefault = true;
@@ -1843,7 +1802,6 @@ function PVPResistSpell(e)
 					return e;
 				end
 			elseif (e.self:GetMR() < 30) then
-				eq.debug("root hit check");
 				if resistchance <= 2 then
 					e.ReturnValue = 0;
 					e.IgnoreDefault = true;
@@ -1855,7 +1813,6 @@ function PVPResistSpell(e)
 				end
 			end
 		elseif (e.self:GetLevel() > 20 and e.self:GetLevel() < 40) then
-			eq.debug("root hit check");
 			resistchance = Random.Real(1, 100);
 			if (e.self:GetMR() >= 90 and e.self:GetMR() > 89) then
 				if resistchance < 98 then
@@ -1868,7 +1825,6 @@ function PVPResistSpell(e)
 					return e;
 				end
 			elseif (e.self:GetMR() < 90 and e.self:GetMR() >= 60) then
-				eq.debug("root hit check");
 				if resistchance <= 50 then
 					e.ReturnValue = 0;
 					e.IgnoreDefault = true;
@@ -1879,7 +1835,6 @@ function PVPResistSpell(e)
 					return e;
 				end
 			elseif (e.self:GetMR() < 60 and e.self:GetMR() > 30) then
-				eq.debug("root hit check");
 				if resistchance <= 15 then
 					e.ReturnValue = 0;
 					e.IgnoreDefault = true;
@@ -1890,7 +1845,6 @@ function PVPResistSpell(e)
 					return e;
 				end
 			elseif (e.self:GetMR() < 30 ) then
-				eq.debug("root hit check");
 				if resistchance <= 2 then
 					e.ReturnValue = 0;
 					e.IgnoreDefault = true;
@@ -1902,7 +1856,6 @@ function PVPResistSpell(e)
 				end
 			end
 		elseif (e.self:GetLevel() >= 40 and e.self:GetLevel() <= 60) then
-			eq.debug("root hit check");
 			resistchance = Random.Real(1, 100);
 			if (e.self:GetMR() >= 120) then
 				if resistchance < 98 then
@@ -1915,7 +1868,6 @@ function PVPResistSpell(e)
 					return e;
 				end
 			elseif (e.self:GetMR() < 120 and e.self:GetMR() > 90) then
-				eq.debug("root hit check");
 				if resistchance <= 50 then
 					e.ReturnValue = 0;
 					e.IgnoreDefault = true;
@@ -1926,7 +1878,6 @@ function PVPResistSpell(e)
 					return e;
 				end
 			elseif (e.self:GetMR() < 90 and e.self:GetMR() > 60) then
-				eq.debug("root hit check");
 				if resistchance <= 15 then
 					e.ReturnValue = 0;
 					e.IgnoreDefault = true;
@@ -1937,7 +1888,6 @@ function PVPResistSpell(e)
 					return e;
 				end
 			elseif (e.self:GetMR() < 60 ) then
-				eq.debug("root hit check");
 				if resistchance <= 2 then
 					e.ReturnValue = 0;
 					e.IgnoreDefault = true;
@@ -1954,7 +1904,6 @@ function PVPResistSpell(e)
 	--Snare Check
 	if (e.spell_id == 242 or e.spell_id == 512 or e.spell_id == 344 or e.spell_id == 355 or e.spell_id == 452 or e.spell_id == 453 or e.spell_id == 1619 or e.spell_id == 636 or e.spell_id == 738 or e.spell_id == 1758) then
 		if (e.self:GetLevel() <= 20) then
-			eq.debug("snare hit check");
 			resistchance = Random.Real(1, 100);
 			if (e.self:GetMR() >= 60) then
 			if resistchance < 98 then
@@ -1967,7 +1916,6 @@ function PVPResistSpell(e)
 				return e;
 			end
 			elseif (e.self:GetMR() <= 59 and e.self:GetMR() >= 45) then
-				eq.debug("spell check");
 			if resistchance <= 50 then
 				e.ReturnValue = 0;
 				e.IgnoreDefault = true;
@@ -1978,7 +1926,6 @@ function PVPResistSpell(e)
 				return e;
 			end
 			elseif (e.self:GetMR() < 45 and e.self:GetMR() > 30) then
-				eq.debug("spell check");
 			if resistchance <= 15 then
 				e.ReturnValue = 0;
 				e.IgnoreDefault = true;
@@ -1989,7 +1936,6 @@ function PVPResistSpell(e)
 				return e;
 			end
 			elseif (e.self:GetMR() < 30) then
-				eq.debug("spell check");
 			if resistchance <= 2 then
 				e.ReturnValue = 0;
 				e.IgnoreDefault = true;
@@ -2001,7 +1947,6 @@ function PVPResistSpell(e)
 			end
 			end
 		elseif (e.self:GetLevel() > 20 and e.self:GetLevel() < 40) then
-			eq.debug("snare hit check");
 			resistchance = Random.Real(1, 100);
 			if (e.self:GetMR() >= 90 and e.self:GetMR() > 89) then
 				if resistchance < 98 then
@@ -2014,7 +1959,6 @@ function PVPResistSpell(e)
 					return e;
 					end
 			elseif (e.self:GetMR() < 90 and e.self:GetMR() >= 60) then
-				eq.debug("spell check");
 				if resistchance <= 50 then
 					e.ReturnValue = 0;
 					e.IgnoreDefault = true;
@@ -2025,7 +1969,6 @@ function PVPResistSpell(e)
 					return e;
 				end
 			elseif (e.self:GetMR() < 60 and e.self:GetMR() > 30) then
-				eq.debug("spell check");
 				if resistchance <= 15 then
 					e.ReturnValue = 0;
 					e.IgnoreDefault = true;
@@ -2036,7 +1979,6 @@ function PVPResistSpell(e)
 					return e;
 				end
 			elseif (e.self:GetMR() < 30 ) then
-				eq.debug("spell check");
 				if resistchance <= 2 then
 					e.ReturnValue = 0;
 					e.IgnoreDefault = true;
@@ -2048,7 +1990,6 @@ function PVPResistSpell(e)
 				end
 				end
 		elseif (e.self:GetLevel() >= 40 and e.self:GetLevel() <= 60) then
-			eq.debug("snare hit check");
 			resistchance = Random.Real(1, 100);
 			if (e.self:GetMR() >= 120) then
 				if resistchance < 98 then
@@ -2061,7 +2002,6 @@ function PVPResistSpell(e)
 					return e;
 				end
 			elseif (e.self:GetMR() < 120 and e.self:GetMR() > 90) then
-				eq.debug("spell check");
 				if resistchance <= 50 then
 					e.ReturnValue = 0;
 					e.IgnoreDefault = true;
@@ -2072,7 +2012,6 @@ function PVPResistSpell(e)
 					return e;
 				end
 			elseif (e.self:GetMR() < 90 and e.self:GetMR() > 60) then
-				eq.debug("spell check");
 				if resistchance <= 15 then
 					e.ReturnValue = 0;
 					e.IgnoreDefault = true;
@@ -2083,7 +2022,6 @@ function PVPResistSpell(e)
 					return e;
 				end
 			elseif (e.self:GetMR() < 60 ) then
-				eq.debug("spell check");
 				if resistchance <= 2 then
 					e.ReturnValue = 0;
 					e.IgnoreDefault = true;
@@ -2099,7 +2037,6 @@ function PVPResistSpell(e)
 		--Blind hit check
 	if (e.spell_id == 201 or e.spell_id == 134 or e.spell_id == 297 or e.spell_id == 143) then
 		if (e.self:GetLevel() <= 20) then
-			eq.debug("blind hit check");
 			resistchance = Random.Real(1, 100);
 			if (e.self:GetMR() >= 60) then
 				if resistchance < 98 then
@@ -2112,7 +2049,6 @@ function PVPResistSpell(e)
 					return e;
 				end
 			elseif (e.self:GetMR() <= 59 and e.self:GetMR() >= 45) then
-				eq.debug("spell check");
 				if resistchance <= 50 then
 					e.ReturnValue = 0;
 					e.IgnoreDefault = true;
@@ -2123,7 +2059,6 @@ function PVPResistSpell(e)
 					return e;
 				end
 			elseif (e.self:GetMR() < 45 and e.self:GetMR() > 30) then
-				eq.debug("spell check");
 				if resistchance <= 15 then
 					e.ReturnValue = 0;
 					e.IgnoreDefault = true;
@@ -2134,7 +2069,6 @@ function PVPResistSpell(e)
 					return e;
 				end
 			elseif (e.self:GetMR() < 30) then
-				eq.debug("spell check");
 				if resistchance <= 2 then
 					e.ReturnValue = 0;
 					e.IgnoreDefault = true;
@@ -2146,7 +2080,6 @@ function PVPResistSpell(e)
 				end
 			end
 		elseif (e.self:GetLevel() > 20 and e.self:GetLevel() < 40) then
-			eq.debug("blind hit check");
 			resistchance = Random.Real(1, 100);
 			if (e.self:GetMR() >= 60) then
 				if resistchance < 98 then
@@ -2159,7 +2092,6 @@ function PVPResistSpell(e)
 					return e;
 				end
 			elseif (e.self:GetMR() < 60 and e.self:GetMR() > 30) then
-				eq.debug("spell check");
 				if resistchance <= 50 then
 					e.ReturnValue = 0;
 					e.IgnoreDefault = true;
@@ -2170,7 +2102,6 @@ function PVPResistSpell(e)
 					return e;
 				end
 			elseif (e.self:GetMR() < 30 ) then
-				eq.debug("spell check");
 				if resistchance <= 2 then
 					e.ReturnValue = 0;
 					e.IgnoreDefault = true;
@@ -2182,10 +2113,8 @@ function PVPResistSpell(e)
 				end
 			end
 		elseif (e.self:GetLevel() >= 40 and e.self:GetLevel() <= 60) then
-			eq.debug("blind hit check");
 			resistchance = Random.Real(1, 100);
 			if (e.self:GetMR() >= 90) then
-				eq.debug("spell check");
 				if resistchance <= 98 then
 					e.ReturnValue = 0;
 					e.IgnoreDefault = true;
@@ -2196,7 +2125,6 @@ function PVPResistSpell(e)
 					return e;
 				end
 			elseif (e.self:GetMR() < 90 and e.self:GetMR() > 60) then
-				eq.debug("spell check");
 				if resistchance <= 45 then
 					e.ReturnValue = 0;
 					e.IgnoreDefault = true;
@@ -2207,7 +2135,6 @@ function PVPResistSpell(e)
 					return e;
 				end
 			elseif (e.self:GetMR() < 60 ) then
-				eq.debug("spell check");
 				if resistchance <= 2 then
 					e.ReturnValue = 0;
 					e.IgnoreDefault = true;
@@ -2224,7 +2151,6 @@ function PVPResistSpell(e)
 	--Stun hit Check
 	if (e.spell_id == 216 or e.spell_id == 123 or e.spell_id == 124 or e.spell_id == 125 or e.spell_id == 1446 or e.spell_id == 1544 or e.spell_id == 503 or e.spell_id == 612 or e.spell_id == 253 or e.spell_id == 520 or e.spell_id == 303 or e.spell_id == 619 or e.spell_id == 290 or e.spell_id == 177 or e.spell_id == 178 or e.spell_id == 1696) then
 		if (e.self:GetLevel() <= 20) then
-			eq.debug("stun hit check");
 			resistchance = Random.Real(1, 100);
 			if (e.self:GetMR() >= 60) then
 				if resistchance < 98 then
@@ -2237,7 +2163,6 @@ function PVPResistSpell(e)
 					return e;
 				end
 			elseif (e.self:GetMR() <= 59 and e.self:GetMR() >= 45) then
-				eq.debug("spell check");
 				if resistchance <= 45 then
 					e.ReturnValue = 0;
 					e.IgnoreDefault = true;
@@ -2248,7 +2173,6 @@ function PVPResistSpell(e)
 					return e;
 				end
 			elseif (e.self:GetMR() < 45 and e.self:GetMR() > 30) then
-				eq.debug("spell check");
 				if resistchance <= 15 then
 					e.ReturnValue = 0;
 					e.IgnoreDefault = true;
@@ -2259,7 +2183,6 @@ function PVPResistSpell(e)
 					return e;
 				end
 			elseif (e.self:GetMR() < 30) then
-				eq.debug("spell check");
 				if resistchance <= 2 then
 					e.ReturnValue = 0;
 					e.IgnoreDefault = true;
@@ -2271,7 +2194,6 @@ function PVPResistSpell(e)
 				end
 			end
 		elseif (e.self:GetLevel() > 20 and e.self:GetLevel() < 40) then
-			eq.debug("stun hit check");
 			resistchance = Random.Real(1, 100);
 			if (e.self:GetMR() >= 60 ) then
 				if resistchance < 98 then
@@ -2284,7 +2206,6 @@ function PVPResistSpell(e)
 					return e;
 				end
 			elseif (e.self:GetMR() < 60 and e.self:GetMR() > 30) then
-				eq.debug("spell check");
 				if resistchance <= 45 then
 					e.ReturnValue = 0;
 					e.IgnoreDefault = true;
@@ -2295,7 +2216,6 @@ function PVPResistSpell(e)
 					return e;
 				end
 			elseif (e.self:GetMR() < 30 ) then
-				eq.debug("spell check");
 				if resistchance <= 2 then
 					e.ReturnValue = 0;
 					e.IgnoreDefault = true;
@@ -2307,7 +2227,6 @@ function PVPResistSpell(e)
 				end
 			end
 		elseif (e.self:GetLevel() >= 40 and e.self:GetLevel() <= 60) then
-			eq.debug("stun hit check");
 			resistchance = Random.Real(1, 100);
 			if (e.self:GetMR() >= 90) then
 				if resistchance < 98 then
@@ -2320,7 +2239,6 @@ function PVPResistSpell(e)
 					return e;
 				end
 			elseif (e.self:GetMR() < 90 and e.self:GetMR() > 60) then
-				eq.debug("spell check");
 				if resistchance <= 45 then
 					e.ReturnValue = 0;
 					e.IgnoreDefault = true;
@@ -2331,7 +2249,6 @@ function PVPResistSpell(e)
 					return e;
 				end
 			elseif (e.self:GetMR() < 60 ) then
-				eq.debug("spell check");
 				if resistchance <= 2 then
 					e.ReturnValue = 0;
 					e.IgnoreDefault = true;
@@ -2348,7 +2265,6 @@ function PVPResistSpell(e)
 		--Mezz hit check
 		if (e.spell_id == 292 or e.spell_id == 187 or e.spell_id == 307 or e.spell_id == 188 or e.spell_id == 190 or e.spell_id == 3585 or e.spell_id == 741 or e.spell_id == 1753 or e.spell_id == 549) then
 			if (e.self:GetLevel() <= 20) then
-				eq.debug("Mezz hit check");
 				resistchance = Random.Real(1, 100);
 				if (e.self:GetMR() >= 60) then
 					if resistchance < 98 then
@@ -2361,7 +2277,6 @@ function PVPResistSpell(e)
 						return e;
 					end
 				elseif (e.self:GetMR() <= 59 and e.self:GetMR() >= 45) then
-					eq.debug("spell check");
 					if resistchance <= 45 then
 						e.ReturnValue = 0;
 						e.IgnoreDefault = true;
@@ -2372,7 +2287,6 @@ function PVPResistSpell(e)
 						return e;
 					end
 				elseif (e.self:GetMR() < 45 and e.self:GetMR() > 30) then
-					eq.debug("spell check");
 					if resistchance <= 15 then
 						e.ReturnValue = 0;
 						e.IgnoreDefault = true;
@@ -2383,7 +2297,6 @@ function PVPResistSpell(e)
 						return e;
 					end
 				elseif (e.self:GetMR() < 30) then
-					eq.debug("spell check");
 					if resistchance <= 2 then
 						e.ReturnValue = 0;
 						e.IgnoreDefault = true;
@@ -2395,7 +2308,6 @@ function PVPResistSpell(e)
 					end
 				end
 			elseif (e.self:GetLevel() > 20 and e.self:GetLevel() < 40) then
-				eq.debug("Mezz hit check");
 				resistchance = Random.Real(1, 100);
 				if (e.self:GetMR() >= 60 ) then
 					if resistchance < 98 then
@@ -2408,7 +2320,6 @@ function PVPResistSpell(e)
 						return e;
 					end
 				elseif (e.self:GetMR() < 60 and e.self:GetMR() > 30) then
-					eq.debug("spell check");
 					if resistchance <= 45 then
 						e.ReturnValue = 0;
 						e.IgnoreDefault = true;
@@ -2419,7 +2330,6 @@ function PVPResistSpell(e)
 						return e;
 					end
 				elseif (e.self:GetMR() < 30 ) then
-					eq.debug("spell check");
 					if resistchance <= 2 then
 						e.ReturnValue = 0;
 						e.IgnoreDefault = true;
@@ -2431,7 +2341,6 @@ function PVPResistSpell(e)
 					end
 				end
 			elseif (e.self:GetLevel() >= 40 and e.self:GetLevel() <= 60) then
-				eq.debug("Mezz hit check");
 				resistchance = Random.Real(1, 100);
 				if (e.self:GetMR() >= 90) then
 					if resistchance < 98 then
@@ -2444,7 +2353,6 @@ function PVPResistSpell(e)
 						return e;
 					end
 				elseif (e.self:GetMR() < 90 and e.self:GetMR() > 60) then
-					eq.debug("spell check");
 					if resistchance <= 45 then
 						e.ReturnValue = 0;
 						e.IgnoreDefault = true;
@@ -2455,7 +2363,6 @@ function PVPResistSpell(e)
 						return e;
 					end
 				elseif (e.self:GetMR() < 60 ) then
-					eq.debug("spell check");
 					if resistchance <= 2 then
 						e.ReturnValue = 0;
 						e.IgnoreDefault = true;
@@ -2471,7 +2378,6 @@ function PVPResistSpell(e)
 
 	--Root tick checks
 	if (e.IsRoot and e.self:GetLevel() <= 20) then
-		eq.debug("root Tik check");
 		resistchance = Random.Real(1, 100);
 		if (e.self:GetMR() >= 60) then
 			if resistchance < 98 then
@@ -2484,7 +2390,6 @@ function PVPResistSpell(e)
 				return e;
 			end
 		elseif (e.self:GetMR() <= 59 and e.self:GetMR() >= 45) then
-			eq.debug("spell check");
 			if resistchance <= 45 then
 				e.ReturnValue = 0;
 				e.IgnoreDefault = true;
@@ -2495,7 +2400,6 @@ function PVPResistSpell(e)
 				return e;
 			end
 		elseif (e.self:GetMR() < 45 and e.self:GetMR() > 30) then
-			eq.debug("spell check");
 			if resistchance <= 15 then
 				e.ReturnValue = 0;
 				e.IgnoreDefault = true;
@@ -2506,7 +2410,6 @@ function PVPResistSpell(e)
 				return e;
 			end
 		elseif (e.self:GetMR() < 30) then
-			eq.debug("spell check");
 			if resistchance <= 2 then
 				e.ReturnValue = 0;
 				e.IgnoreDefault = true;
@@ -2518,7 +2421,6 @@ function PVPResistSpell(e)
 			end
 		end
 	elseif (e.IsRoot and e.self:GetLevel() > 20 and e.self:GetLevel() < 40) then
-		eq.debug("root check");
 		resistchance = Random.Real(1, 100);
 		if (e.self:GetMR() >= 90 and e.self:GetMR() > 89) then
 			if resistchance < 98 then
@@ -2531,7 +2433,6 @@ function PVPResistSpell(e)
 				return e;
 			end
 		elseif (e.self:GetMR() < 90 and e.self:GetMR() >= 60) then
-			eq.debug("spell check");
 			if resistchance <= 45 then
 				e.ReturnValue = 0;
 				e.IgnoreDefault = true;
@@ -2542,7 +2443,6 @@ function PVPResistSpell(e)
 				return e;
 			end
 		elseif (e.self:GetMR() < 60 and e.self:GetMR() > 30) then
-			eq.debug("spell check");
 			if resistchance <= 15 then
 				e.ReturnValue = 0;
 				e.IgnoreDefault = true;
@@ -2553,7 +2453,6 @@ function PVPResistSpell(e)
 				return e;
 			end
 		elseif (e.self:GetMR() < 30 ) then
-			eq.debug("spell check");
 			if resistchance <= 2 then
 				e.ReturnValue = 0;
 				e.IgnoreDefault = true;
@@ -2565,7 +2464,6 @@ function PVPResistSpell(e)
 			end
 		end
 	elseif (e.IsRoot and e.self:GetLevel() >= 40 and e.self:GetLevel() <= 60) then
-		eq.debug("root check");
 		resistchance = Random.Real(1, 100);
 		if (e.self:GetMR() >= 120) then
 			if resistchance < 98 then
@@ -2578,7 +2476,6 @@ function PVPResistSpell(e)
 				return e;
 			end
 		elseif (e.self:GetMR() < 120 and e.self:GetMR() > 90) then
-			eq.debug("spell check");
 			if resistchance <= 45 then
 				e.ReturnValue = 0;
 				e.IgnoreDefault = true;
@@ -2589,7 +2486,6 @@ function PVPResistSpell(e)
 				return e;
 			end
 		elseif (e.self:GetMR() < 90 and e.self:GetMR() > 60) then
-			eq.debug("spell check");
 			if resistchance <= 15 then
 				e.ReturnValue = 0;
 				e.IgnoreDefault = true;
@@ -2600,7 +2496,6 @@ function PVPResistSpell(e)
 				return e;
 			end
 		elseif (e.self:GetMR() < 60 ) then
-			eq.debug("spell check");
 			if resistchance <= 2 then
 				e.ReturnValue = 0;
 				e.IgnoreDefault = true;
@@ -2612,14 +2507,5 @@ function PVPResistSpell(e)
 			end
 		end
 	end
-
-	--Swarm line, unresistable druid dots
-	--if (e.spell_id == 264 or e.spell_id == 99 or e.spell_id == 665 or e.spell_id == 259 or e.spell_id == 665 or e.spell_id == 1601) then
-	--	eq.debug("Druid Swarm Check");
-	--	e.ReturnValue = 100;
-	--	e.IgnoreDefault = true;
-	--	return e;
-	--end
-
 	return e;
 end
