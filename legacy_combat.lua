@@ -234,6 +234,48 @@ function CheckHitChance(e)
 		return CheckHitChancePvPPet(e);
 	end
 	-- PvE and EvE checkhitchance logic here
+	if(self:IsNPC() or (self:HasOwner() and self:GetOwner():IsNPC())) then
+		if (e.hit.skill == 30 or e.hit.skill == 10) then
+			return CheckHitChanceMoB(e);
+		end
+	end
+end
+
+function CheckHitChanceMoB(e)
+	local defender    = other;
+	local attacker    = self;
+	local other = e.self;
+	local self = e.other;
+	e.IgnoreDefault   = true;
+
+	if (self:GetLevel() < other:GetLevel()) then
+		leveldif = other:GetLevel() - self:GetLevel();
+	else
+		leveldif = 0;
+	end
+
+	if (e.hit.skill == 30 or e.hit.skill == 10) then
+		chancetohit = 65 - (3 * leveldif);
+	end
+
+	if (other:IsClient() and other:CastToClient():IsSitting()) then
+		chancetohit = 100;
+	end
+
+	local tohit_roll = Random.Real(0, 100);
+
+	if (chancetohit > 95) then
+		chancetohit = 95;
+	elseif (chancetohit < 5) then
+		chancetohit = 5;
+	end
+
+	if (tohit_roll <= chancetohit) then
+		e.ReturnValue = true;
+	else
+		e.ReturnValue = false;
+	end
+	return e;
 end
 
 function CheckHitChancePvPPet(e)
@@ -265,8 +307,7 @@ function CheckHitChancePvPPet(e)
 			)
 	);
 
-	if (chancetohit > 1000 or chancetohit < -1000) then
-	elseif (chancetohit > 95) then
+	if (chancetohit > 95) then
 		chancetohit = 95;
 	elseif (chancetohit < 5) then
 		chancetohit = 5;
@@ -359,11 +400,10 @@ function CheckHitChancePvP(e)
 			)
 	);
 
-	if (chancetohit > 1000 or chancetohit < -1000) then
-		elseif (chancetohit > 95) then
+	if (chancetohit > 95) then
 		chancetohit = 95;
-		elseif (chancetohit < 5) then
-			chancetohit = 5;
+	elseif (chancetohit < 5) then
+		chancetohit = 5;
 	end
 
 	if (other:FindBuff(4502)) then
@@ -771,7 +811,7 @@ function CommonOutgoingHitSuccess(e)
 	--Client to NPC damage.
 	if (e.self:IsClient() and e.other:IsNPC()) then
 		if (e.hit.skill == 30 or e.hit.skill == 10) then
-			mitigationac = e.other:GetAC() / 10;
+			mitigationac = e.other:GetAC() / 20;
 			if (e.self:GetLevel() < 11) then
 				bashdmg = Random.Real(1, 7);
 				e.hit.damage_done = bashdmg - mitigationac;
@@ -814,11 +854,15 @@ function CommonOutgoingHitSuccess(e)
 		self_ammo = self:GetInventory():GetItem(Slot.Ammo);
 		boots = self:GetInventory():GetItem(Slot.Feet);
 		bootsac = boots:GetItem():AC();
-		rangedweapondamage = self_bow:GetItem():Damage()
-		ammoweapondamage = self_ammo:GetItem():Damage()
-		weapondamage = self_weapon:GetItem():Damage()
-		offweapondamage = off_hand:GetItem():Damage()
-		weaponatk = (self_weapon:GetItem():Attack() /10 )
+		rangedweapondamage = self_bow:GetItem():Damage();
+		ammoweapondamage = self_ammo:GetItem():Damage();
+		weapondamage = self_weapon:GetItem():Damage();
+		baneweapondamage = self_weapon:GetItem():BaneDmgAmt();
+		baneweapontype = self_weapon:GetItem():BaneDmgBody();
+		baneweaponrace = self_weapon:GetItem():BaneDmgRace();
+		baneweaponracedamage = self_weapon:GetItem():BaneDmgRaceAmt();
+		offweapondamage = off_hand:GetItem():Damage();
+		weaponatk = (self_weapon:GetItem():Attack() /10 );
 		strbonus = (self:GetSTR() /12);
 		dexbonus = (self:GetDEX() /12);
 		playeratkbonus = (self:GetATK() /15);
@@ -880,7 +924,7 @@ function CommonOutgoingHitSuccess(e)
 			else
 				bstabstr = self:GetSTR();
 			end
-			defenderac = defenderac ;
+			defenderac = defenderac * .10;
 			attackmod = self:GetATK() / 5;
 			backstabmod = 2 + (self:GetSkill(Skill.Backstab) * 0.02 );
 			backstabmin = (((weapondamage * backstabmod) * bstabstr) / 100) + attackmod;
@@ -888,9 +932,9 @@ function CommonOutgoingHitSuccess(e)
 			backstabdamage = Random.Real(backstabmin, backstabmax);
 			e.hit.damage_done = backstabdamage - defenderac;
 
-			if (other:CastToClient():IsSitting()) then
-				e.hit.damage_done = backstabmax - defenderac;
-			end
+			eq.debug("backstabdamage " .. backstabdamage);
+			eq.debug("defenderac " .. defenderac);
+
 
 			if (self:FindBuff(4676)) then
 				e.hit.damage_done = e.hit.damage_done * 2;
@@ -959,6 +1003,73 @@ function CommonOutgoingHitSuccess(e)
 				e.hit.damage_done = e.hit.damage_done * 2.05;
 			end
 			
+		end
+
+		--Round Kick damage
+		if e.hit.skill == 38 then
+			roundkickmindmg = 1 + bootsac;
+			roundkickmaxdmg = roundkickmindmg + (self:GetSkill(Skill.RoundKick) / 8);
+			roundkickdmg = Random.Real(roundkickmindmg, roundkickmaxdmg);
+			e.hit.damage_done = roundkickdmg - mitigationac;
+
+			--damage discs
+			if (self:FindBuff(4676)) then
+				e.hit.damage_done = e.hit.damage_done * 2;
+			end
+			if (self:FindBuff(4675)) then
+				e.hit.damage_done = e.hit.damage_done * 2;
+			end
+			if (self:FindBuff(4512)) then
+				e.hit.damage_done = e.hit.damage_done * 2;
+			end
+			if (self:FindBuff(4498)) then
+				e.hit.damage_done = e.hit.damage_done * 1.35;
+			end
+			
+			--mitigation discs
+			if (other:FindBuff(4510)) then
+				e.hit.damage_done = e.hit.damage_done * .40;
+			end
+			if (other:FindBuff(4499)) then
+				e.hit.damage_done = e.hit.damage_done * .65;
+			end
+			if (other:FindBuff(4498)) then
+				e.hit.damage_done = e.hit.damage_done * 1.35;
+			end
+		end
+
+		--Tiger Claw damage
+		if e.hit.skill == 52 then
+			tigermindmg = 1;
+			tigermaxdmg = tigermindmg + (self:GetSkill(Skill.TigerClaw) / 10);
+			tigerdmg = Random.Real(tigermindmg, tigermaxdmg);
+			e.hit.damage_done = tigerdmg - mitigationac;
+
+
+			--damage discs
+			if (self:FindBuff(4676)) then
+				e.hit.damage_done = e.hit.damage_done * 2;
+			end
+			if (self:FindBuff(4675)) then
+				e.hit.damage_done = e.hit.damage_done * 2;
+			end
+			if (self:FindBuff(4512)) then
+				e.hit.damage_done = e.hit.damage_done * 2;
+			end
+			if (self:FindBuff(4498)) then
+				e.hit.damage_done = e.hit.damage_done * 1.35;
+			end
+			
+			--mitigation discs
+			if (other:FindBuff(4510)) then
+				e.hit.damage_done = e.hit.damage_done * .40;
+			end
+			if (other:FindBuff(4499)) then
+				e.hit.damage_done = e.hit.damage_done * .65;
+			end
+			if (other:FindBuff(4498)) then
+				e.hit.damage_done = e.hit.damage_done * 1.35;
+			end
 		end
 	
 		--flying kick damage
@@ -1105,6 +1216,13 @@ function CommonOutgoingHitSuccess(e)
 		if e.hit.skill == 0 or e.hit.skill == 1 or e.hit.skill == 28 or (e.hit.skill == 36 and itemtype ~= 35) then --1her
 			minimumdamage = 1;
 			maximumdamage = ((weapondamage * offensivemod) + dmg_bonus)  - mitigationac;
+			if(e.other:GetBodyType() == baneweapontype) then
+				maximumdamage = maximumdamage + baneweapondamage;
+			end
+			if(e.other:GetRace() == baneweaponrace) then
+				maximumdamage = maximumdamage + baneweaponracedamage;
+			end
+
 
 			local damage_roll = Random.Real(minimumdamage, maximumdamage);
 			local attack_roll = Random.Real(0, playeratkbonus);
@@ -1152,6 +1270,13 @@ function CommonOutgoingHitSuccess(e)
 		if e.hit.skill == 2 or e.hit.skill == 3 or (e.hit.skill == 36 and itemtype == 35) then --2her
 			minimumdamage = 1;
 			maximumdamage = ((weapondamage * offensivemod) + dmg_bonus)  - mitigationac;
+			if(e.other:GetBodyType() == baneweapontype) then
+				maximumdamage = maximumdamage + baneweapondamage;
+			end
+			if(e.other:GetRace() == baneweaponrace) then
+				maximumdamage = maximumdamage + baneweaponracedamage;
+			end
+
 			local damage_roll = Random.Real(minimumdamage, maximumdamage);
 			local attack_roll = Random.Real(0, (playeratkbonus));
 			local str_roll = Random.Real(0, (strbonus));
@@ -1411,7 +1536,81 @@ function CommonOutgoingHitSuccess(e)
 				e.hit.damage_done = e.hit.damage_done * 1.35;
 			end
 		end
+
+		--Round Kick damage
+		if e.hit.skill == 38 then
+			roundkickmindmg = 1 + bootsac;
+			roundkickmaxdmg = roundkickmindmg + (self:GetSkill(Skill.RoundKick) / 10);
+			roundkickdmg = Random.Real(roundkickmindmg, roundkickmaxdmg);
+			e.hit.damage_done = roundkickdmg - mitigationac;
+
+			if (other:CastToClient():IsSitting()) then
+				e.hit.damage_done = roundkickmaxdmg;
+			end
+
+			--damage discs
+			if (self:FindBuff(4676)) then
+				e.hit.damage_done = e.hit.damage_done * 2;
+			end
+			if (self:FindBuff(4675)) then
+				e.hit.damage_done = e.hit.damage_done * 2;
+			end
+			if (self:FindBuff(4512)) then
+				e.hit.damage_done = e.hit.damage_done * 2;
+			end
+			if (self:FindBuff(4498)) then
+				e.hit.damage_done = e.hit.damage_done * 1.35;
+			end
+			
+			--mitigation discs
+			if (other:FindBuff(4510)) then
+				e.hit.damage_done = e.hit.damage_done * .40;
+			end
+			if (other:FindBuff(4499)) then
+				e.hit.damage_done = e.hit.damage_done * .65;
+			end
+			if (other:FindBuff(4498)) then
+				e.hit.damage_done = e.hit.damage_done * 1.35;
+			end
+		end
 	
+		--Tiger Claw damage
+		if e.hit.skill == 52 then
+			tigermindmg = 1;
+			tigermaxdmg = tigermindmg + (self:GetSkill(Skill.TigerClaw) / 10);
+			tigerdmg = Random.Real(tigermindmg, tigermaxdmg);
+			e.hit.damage_done = tigerdmg - mitigationac;
+
+			if (other:CastToClient():IsSitting()) then
+				e.hit.damage_done = tigermaxdmg;
+			end
+
+			--damage discs
+			if (self:FindBuff(4676)) then
+				e.hit.damage_done = e.hit.damage_done * 2;
+			end
+			if (self:FindBuff(4675)) then
+				e.hit.damage_done = e.hit.damage_done * 2;
+			end
+			if (self:FindBuff(4512)) then
+				e.hit.damage_done = e.hit.damage_done * 2;
+			end
+			if (self:FindBuff(4498)) then
+				e.hit.damage_done = e.hit.damage_done * 1.35;
+			end
+			
+			--mitigation discs
+			if (other:FindBuff(4510)) then
+				e.hit.damage_done = e.hit.damage_done * .40;
+			end
+			if (other:FindBuff(4499)) then
+				e.hit.damage_done = e.hit.damage_done * .65;
+			end
+			if (other:FindBuff(4498)) then
+				e.hit.damage_done = e.hit.damage_done * 1.35;
+			end
+		end
+
 		--flying kick damage
 		if e.hit.skill == 26 then
 			flyingmindmg = 50 + bootsac;
@@ -1629,6 +1828,13 @@ function CommonOutgoingHitSuccess(e)
 			minimumdamage = 1;
 			maximumdamage = ((weapondamage * offensivemod) + dmg_bonus)  - mitigationac;
 
+			if(e.other:GetBodyType() == baneweapontype) then
+				maximumdamage = maximumdamage + baneweapondamage;
+			end
+			if(e.other:GetRace() == baneweaponrace) then
+				maximumdamage = maximumdamage + baneweaponracedamage;
+			end
+
 			local damage_roll = Random.Real(minimumdamage, maximumdamage);
 			local attack_roll = Random.Real(0, playeratkbonus);
 			local str_roll = Random.Real(0, strbonus);
@@ -1677,9 +1883,16 @@ function CommonOutgoingHitSuccess(e)
 
 
 		if e.hit.skill == 2 or e.hit.skill == 3 or (e.hit.skill == 36 and itemtype == 35) then --2her
-
 			minimumdamage = 1;
 			maximumdamage = ((weapondamage * offensivemod) + dmg_bonus)  - mitigationac; 
+
+			if(e.other:GetBodyType() == baneweapontype) then
+				maximumdamage = maximumdamage + baneweapondamage;
+			end
+			if(e.other:GetRace() == baneweaponrace) then
+				maximumdamage = maximumdamage + baneweaponracedamage;
+			end
+
 			local damage_roll = Random.Real(minimumdamage, maximumdamage);
 			local attack_roll = Random.Real(0, (playeratkbonus));
 			local str_roll = Random.Real(0, (strbonus));
