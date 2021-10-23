@@ -810,41 +810,6 @@ function CommonOutgoingHitSuccess(e)
 
 	--Client to NPC damage.
 	if (e.self:IsClient() and e.other:IsNPC()) then
-		if (e.hit.skill == 30 or e.hit.skill == 10) then
-			mitigationac = e.other:GetAC() / 20;
-			if (e.self:GetLevel() < 11) then
-				bashdmg = Random.Real(1, 7);
-				e.hit.damage_done = bashdmg - mitigationac;
-				e.IgnoreDefault = true;
-				if (e.other:IsClient() and e.other:CastToClient():IsSitting()) then
-					maxkick = 7;
-					e.hit.damage_done = maxkick;
-				end
-				e = TryCriticalHit(e);
-				return e;
-			elseif (e.self:GetLevel() < 21) then
-				bashdmg = Random.Real(7, 15);
-				e.hit.damage_done = bashdmg - mitigationac;
-				e.IgnoreDefault = true;
-				if (e.other:IsClient() and e.other:CastToClient():IsSitting()) then
-					maxkick = 15;
-					e.hit.damage_done = maxkick;
-				end
-				e = TryCriticalHit(e);
-				return e;
-			elseif (e.self:GetLevel() > 21) then
-				bashdmg = Random.Real(7, 27);
-				e.hit.damage_done = bashdmg - mitigationac;
-				e.IgnoreDefault = true;
-				if (e.other:IsClient() and e.other:CastToClient():IsSitting()) then
-					maxkick = 27;
-					e.hit.damage_done = maxkick;
-				end
-				e = TryCriticalHit(e);
-				return e;
-			end
-		end
-
 		self = e.self:CastToClient();
 		other = e.other:CastToNPC();
 
@@ -867,7 +832,10 @@ function CommonOutgoingHitSuccess(e)
 		dexbonus = (self:GetDEX() /12);
 		playeratkbonus = (self:GetATK() /15);
 		defenderac = (e.other:GetAC());
-		mitigationac = (defenderac / 10);
+		mitigationac = (defenderac / 45);
+		if(mitigationac < 0) then
+			mitigationac = 0;
+		end
 		offensivemod = ((self:GetSkill(Skill.Offense) + self:GetSTR()) / 100);
 		if (offensivemod < 2) then
 			offensivemod = 2;
@@ -915,6 +883,40 @@ function CommonOutgoingHitSuccess(e)
 				weapondamage = 30;
 			end
 		end
+
+			if (e.hit.skill == 30 or e.hit.skill == 10) then
+				if (e.self:GetLevel() < 11) then
+					bashdmg = Random.Real(1, 7);
+					e.hit.damage_done = bashdmg - mitigationac;
+					e.IgnoreDefault = true;
+					if (e.other:IsClient() and e.other:CastToClient():IsSitting()) then
+						maxkick = 7;
+						e.hit.damage_done = maxkick;
+					end
+					e = TryCriticalHit(e);
+					return e;
+				elseif (e.self:GetLevel() < 21) then
+					bashdmg = Random.Real(7, 15);
+					e.hit.damage_done = bashdmg - mitigationac;
+					e.IgnoreDefault = true;
+					if (e.other:IsClient() and e.other:CastToClient():IsSitting()) then
+						maxkick = 15;
+						e.hit.damage_done = maxkick;
+					end
+					e = TryCriticalHit(e);
+					return e;
+				elseif (e.self:GetLevel() > 21) then
+					bashdmg = Random.Real(7, 27);
+					e.hit.damage_done = bashdmg - mitigationac;
+					e.IgnoreDefault = true;
+					if (e.other:IsClient() and e.other:CastToClient():IsSitting()) then
+						maxkick = 27;
+						e.hit.damage_done = maxkick;
+					end
+					e = TryCriticalHit(e);
+					return e;
+				end
+			end
 	
 	
 		--Backstab Damage
